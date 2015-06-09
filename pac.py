@@ -7,7 +7,7 @@ import numpy as np
 # Want MI = H_Net - H_drive
 # Gain should have two forms - rate and synch
 class Spikes(object):
-    def __init__(self, n, t, dt=0.001, seed=1):
+    def __init__(self, n, t, dt=0.001, seed=None):
 
         self.seed = seed
         np.random.seed(self.seed)
@@ -55,7 +55,7 @@ class Spikes(object):
 def osc(times, a, f):
         """Oscillating bias term"""
 
-        return a * np.sin(times * f * 2 * np.pi)
+        return a + a * np.sin(times * f * 2 * np.pi)
 
 
 def stim(times, d, scale):
@@ -66,12 +66,9 @@ def stim(times, d, scale):
         d += np.random.normal(0, scale)
         rates.append(d)
 
-    return np.array(rates)
-
-
-def gain_pac(times, a, f, d, scale):
-    """Stim times osc"""
-    return osc(times, a, f) * stim(times, d, scale)
+    rates = np.array(rates)
+    rates[rates < 0] = 0
+    return rates
 
 
 def to_spiketimes(times, spikes):
