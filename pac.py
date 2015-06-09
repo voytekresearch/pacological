@@ -53,9 +53,9 @@ class Spikes(object):
 
 
 def osc(times, a, f):
-        """Oscillating bias term"""
+    """Oscillating bias term"""
 
-        return a + a * np.sin(times * f * 2 * np.pi)
+    return a + a * np.sin(times * f * 2 * np.pi)
 
 
 def stim(times, d, scale):
