@@ -48,7 +48,8 @@ class Spikes(object):
         # But how to conserve rate?
         # Justification:
         # 'Partitioning neural variability'
-        # 'Gamma oscillations of spiking neural populations enhance signal discrimination.'
+        # 'Gamma oscillations of spiking neural populations 
+        # enhance signal discrimination.'
         raise NotImplementedError("TODO")
 
 
@@ -68,11 +69,12 @@ def stim(times, d, scale):
 
     rates = np.array(rates)
     rates[rates < 0] = 0
+
     return rates
 
 
 def to_spiketimes(times, spikes):
-    """Convert spikes to 2d (dt, neuron) matrix"""
+    """Convert spikes to 2d (neuron, spike time) matrix"""
 
     n_steps = len(times)
     n = spikes.shape[1]
@@ -85,3 +87,4 @@ def to_spiketimes(times, spikes):
                 ts.append(times[i])  # look up dt time
 
     return ns, ts
+
