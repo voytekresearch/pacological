@@ -94,7 +94,6 @@ def main(n, t, Iosc, f, Istim, Sstim, dt, k_spikes, excitability):
     }
 
 
-
 if __name__ == "__main__":
     import sys
     import pandas as pd
@@ -139,7 +138,7 @@ if __name__ == "__main__":
         for b in res['H'].keys():
             hys[b] = res['H'][b]['HY']
 
-        df1 = pd.DataFrame(hys, index=[0])
+        df1 = pd.DataFrame(hys)
         df1.to_csv(
             "{0}_HY.csv".format(basename),
             index=False, header=True
