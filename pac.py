@@ -40,10 +40,10 @@ class Spikes(object):
             raise ValueError("Shape of `drive` and `oscillation' must match")
         if drive.ndim != 1:
             raise ValueError("`drive` and `oscillation` must be 1d")
-        if np.all(drive < 0):
-            raise ValueError("`drive` must be greater than 0")
-        if np.all(oscillation < 0):
-            raise ValueError("`oscillation` must be greater than 0")
+        # if np.all(drive < 0):
+        #     raise ValueError("`drive` must be greater than 0")
+        # if np.all(oscillation < 0):
+        #     raise ValueError("`oscillation` must be greater than 0")
 
     def _refractory(self, spks):
         lw = int(self.refractory / self.dt)  # len of refractory window
