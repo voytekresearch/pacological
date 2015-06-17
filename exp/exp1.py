@@ -135,10 +135,14 @@ if __name__ == "__main__":
         res = main(n, t, Iosc, f, Istim, Sstim, dt, k, excitability)
 
         # Process and save the result
-        df1 = pd.DataFrame(res['H'])
+        hys = {}
+        for b in res['H'].keys():
+            hys[b] = res['H'][b]['HY']
+
+        df1 = pd.DataFrame(hys, index=[0])
         df1.to_csv(
-            "{0}_H.csv".format(basename),
-            header=True
+            "{0}_HY.csv".format(basename),
+            index=False, header=True
         )
 
         df2 = pd.DataFrame(res['MI'], index=[0])
