@@ -69,7 +69,7 @@ class Spikes(object):
 
         return self._refractory(spikes)
 
-    def binary(self, rates, k, excitability=0.001):
+    def binary(self, rates, k=3, excitability=0.001):
         self._constraints(rates, rates)  # does no harm to check twice
 
         ps = rates * excitability
