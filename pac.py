@@ -69,6 +69,61 @@ class Spikes(object):
 
         return self._refractory(spikes)
 
+    def bernoulli(self, rates, excitability=0.1):
+        self._constraints(rates, rates)  # does no harm to check twice
+
+        ps = rates * excitability
+        ns = range(self.n)
+        np.random.shuffle(ns)
+
+        spikes = np.zeros_like(self.unifs, np.int)
+        for i in xrange(int(self.t * (1.0 / self.dt))):
+            js = np.arange(self.n, dtype=int)
+            np.random.shuffle(js)
+
+            # Grab a random j and lookup its u at i
+            # if u <= p add spike to j,
+            # and draw j again.
+            #
+            # Repeat until we're out of j
+            # or u > p
+            for j in js:
+                if self.unifs[i, j] <= ps[i]:
+                    spikes[i, j] = 1
+                else:
+                    break
+
+        return self._refractory(spikes)
+
+    def poisson_bernoulli(self, drive, oscillation, excitability=0.1,
+                       amplitude=False):
+        self._constraints(drive, oscillation)
+
+        # Renorm
+        normed = oscillation / float(oscillation.max())
+
+        # Drive is baseline poisson but...
+        spks_p = self.poisson(drive * (1 - normed))
+
+        # the oscillation increases Binomial firing
+        if amplitude:
+            spks_b = self.bernoulli(
+                oscillation + (drive * normed), excitability
+            )
+        else:
+            spks_b = self.bernoulli(drive * normed, excitability)
+
+        # Justification:
+        # 'Partitioning neural variability'
+        # 'Gamma oscillations of spiking neural populations
+        # enhance signal discrimination.'
+        # 'Binary Spiking in Auditory Cortex'
+
+        spks = spks_p + spks_b
+        spks[spks > 1] = 1  # Clip double spikes
+
+        return self._refractory(spks)
+
     def binary(self, rates, k=3, excitability=0.001):
         self._constraints(rates, rates)  # does no harm to check twice
 
