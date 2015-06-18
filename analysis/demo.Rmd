@@ -1,0 +1,42 @@
+---
+title: "Demo figures"
+author: "ejp"
+date: "June 17, 2015"
+output: html_document
+---
+
+```{r}
+library(ggplot2)
+library(dplyr)
+
+bias <- read.csv("../data/demo/bias.csv")
+qplot(data=bias, x=times, y=osc, geom="line") + theme_minimal() + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.line = element_line(colour = "black"))
+ggsave("osc.pdf", width = 3, height = 2)
+
+qplot(data=bias, x=times, y=stim, geom="line") + theme_minimal() + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.line = element_line(colour = "black"))
+ggsave("stim.pdf", width = 3, height = 2)
+
+qplot(data=bias, x=times, y=gain, geom="line") + theme_minimal() + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.line = element_line(colour = "black"))
+ggsave("gain.pdf", width = 3, height = 2)
+
+qplot(data=bias, x=times, y=silenced, geom="line") + theme_minimal() + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.line = element_line(colour = "black"))
+ggsave("silenced.pdf", width = 3, height = 2)
+
+qplot(data=bias, x=times, y=summed, geom="line") + theme_minimal() + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.line = element_line(colour = "black"))
+ggsave("summed.pdf", width = 3, height = 2)
+```
+
+```{r}
+rate <- read.csv("../data/demo/spikes_stim_est_p.csv")
+bin <- read.csv("../data/demo/spikes_stim_est_b.csv")
+
+rate <- subset(rate, neuron < 50)
+bin <- subset(bin, neuron < 50)
+
+qplot(data=rate, x=time, y=neuron) + theme_minimal() + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.line = element_line(colour = "black"))
+ggsave("rate.pdf", width=6, height = 4)
+
+qplot(data=bin, x=time, y=neuron) + theme_minimal() + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.line = element_line(colour = "black"))
+ggsave("binary.pdf", width=6, height = 4)
+```
+

@@ -1,0 +1,254 @@
+---
+title: "Phase-amplitude coupling, neural computation, and information transmission: results"
+author: "Erik Peterson"
+date: "June 18, 2015"
+output:
+  html_document:
+    number_sections: yes
+    theme: spacelab
+    toc: yes
+---
+
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+library(ggplot2)
+library(gridExtra)
+
+path <- "/home/ejp/src/pacological/data"
+exp1path <- paste(path, "/exp1/", sep="")
+
+rates <- c(2, 6, 10, 14, 18, 22, 26, 30, 34, 38, 42, 46, 50, 54, 58)
+
+mi_exp1 <- NULL
+for(r_o in rates){
+  for(r_s in rates){
+    try({
+      name <- paste("Iosc-", as.character(r_o), "_Istim-", 
+                    as.character(r_s), "_MI_summary.csv", sep="")
+      di <- read.csv(paste(exp1path, name, sep=""))
+      di["Iosc"] <- rep(r_o, nrow(di))
+      di["Istim"] <- rep(r_s, nrow(di))
+      mi_exp1 <- rbind(mi_exp1, di)  
+    }) 
+  }
+}
+
+h_exp1 <- NULL
+for(r_o in rates){
+  for(r_s in rates){
+    try({
+      name <- paste("Iosc-", as.character(r_o), "_Istim-", 
+                    as.character(r_s), "_H_summary.csv", sep="")
+      di <- read.csv(paste(exp1path, name, sep=""))
+      di["Iosc"] <- rep(r_o, nrow(di))
+      di["Istim"] <- rep(r_s, nrow(di))
+      h_exp1 <- rbind(h_exp1, di)  
+    }) 
+  }
+}
+
+pac_exp1 <- NULL
+for(r_o in rates){
+  for(r_s in rates){
+    try({
+      name <- paste("Iosc-", as.character(r_o), "_Istim-", 
+                    as.character(r_s), "_PAC_summary.csv", sep="")
+      di <- read.csv(paste(exp1path, name, sep=""))
+      di["Iosc"] <- rep(r_o, nrow(di))
+      di["Istim"] <- rep(r_s, nrow(di))
+      pac_exp1 <- rbind(pac_exp1, di)  
+    }) 
+  }
+}
+```
+
+# Rate (Poisson) coding
+
+## Gain (multiplicative) interactions
+
+First we look at the relation between Istim and {MI, H, PAC}, as a function of Iosc magnitude (facet). Metrics for stimulus-only are included for comparison (blue).
+
+```{r, echo=FALSE, fig.width=12, fig.height=10}
+p1 <- qplot(data=mi_exp1[mi_exp1$X %in% c("gain_p", "stim_p"),], x=Istim, color=X, y=mean, geom="line", facets=.~Iosc) + theme_bw() + xlim(1,60) + xlab("") + ylab("MI")
+
+p2 <- qplot(data=h_exp1[mi_exp1$X %in% c("gain_p", "stim_p"),], x=Istim, color=X, y=mean, geom="line", facets=.~Iosc) + theme_bw() + xlim(1,60) + xlab("") + ylab("H")
+
+p3 <- qplot(data=pac_exp1[mi_exp1$X %in% c("gain_p", "stim_p"),], x=Istim, color=X, y=mean, geom="line", facets=.~Iosc) + theme_bw() + xlim(1,60) + xlab("Istim") + ylab("PAC")
+
+grid.arrange(p1, p2, p3, ncol=1)
+```
+
+To better see the Istim/Iosc relation, replot as a heatmap. These do not correct for stimulus-only. (Should change that in the future?)
+
+```{r, echo=FALSE, fig.width=4, fig.height=8}
+p1 <- qplot(data=mi_exp1[mi_exp1$X %in% c("gain_p"),], x=Istim, y=Iosc, fill=mean, geom="tile") + theme_minimal() + ggtitle("MI")
+
+p2 <- qplot(data=h_exp1[h_exp1$X %in% c("gain_p"),], x=Istim, y=Iosc, fill=mean, geom="tile") + theme_minimal() + ggtitle("H")
+
+p3 <- qplot(data=pac_exp1[pac_exp1$X %in% c("gain_p"),], x=Istim, y=Iosc, fill=mean, geom="tile") + theme_minimal() + ggtitle("PAC")
+
+grid.arrange(p1, p2, p3, ncol=1)
+```
+
+* For Istim below 20 Hz, gain improves MI.
+* Effect is quite pronouces for low stimulus firing rates (2 Hz),
+* the rapidly declines and recovers, eventually platuaing at or near stimulus MI.
+* H increases with gain and Iosc, but the Iosc effect diminshes as Istim and Iosc approach each other.
+* Once Iosc hits 10 Hz there is a strong non-linear decline and rise in PAC as a function of Istim. This negative peak shifts leftward as Iosc increases. Curious. Unexpected.
+
+## Additive interactions
+
+Plots structure same as for above.
+
+
+```{r, echo=FALSE, fig.width=12, fig.height=10}
+p1 <- qplot(data=mi_exp1[mi_exp1$X %in% c("summed_p", "stim_p"),], x=Istim, color=X, y=mean, geom="line", facets=.~Iosc) + theme_bw() + xlim(1,60) + xlab("") + ylab("MI")
+
+p2 <- qplot(data=h_exp1[mi_exp1$X %in% c("summed_p", "stim_p"),], x=Istim, color=X, y=mean, geom="line", facets=.~Iosc) + theme_bw() + xlim(1,60) + xlab("") + ylab("H")
+
+p3 <- qplot(data=pac_exp1[mi_exp1$X %in% c("summed_p", "stim_p"),], x=Istim, color=X, y=mean, geom="line", facets=.~Iosc) + theme_bw() + xlim(1,60) + xlab("Istim") + ylab("PAC")
+
+library(gridExtra)
+grid.arrange(p1, p2, p3, ncol=1)
+```
+
+```{r, echo=FALSE, fig.width=4, fig.height=8}
+p1 <- qplot(data=mi_exp1[mi_exp1$X %in% c("summed_p"),], x=Istim, y=Iosc, fill=mean, geom="tile") + theme_minimal() + ggtitle("MI")
+
+p2 <- qplot(data=h_exp1[h_exp1$X %in% c("summed_p"),], x=Istim, y=Iosc, fill=mean, geom="tile") + theme_minimal() + ggtitle("H")
+
+p3 <- qplot(data=pac_exp1[pac_exp1$X %in% c("summed_p"),], x=Istim, y=Iosc, fill=mean, geom="tile") + theme_minimal() + ggtitle("PAC")
+
+grid.arrange(p1, p2, p3, ncol=1)
+```
+
+* Additive has no effect on MI,
+* but does increase H 
+* and reliably increases PAC.
+* The stronger the stimulus, the less PAC. Stronger Ioscs only mitigate somewhat the decline.
+
+
+## Subtractive interaction
+
+Plot structure identical to silenced (above).
+
+```{r, echo=FALSE, warning=FALSE, fig.width=12, fig.height=10}
+p1 <- qplot(data=mi_exp1[mi_exp1$X %in% c("silenced_p", "stim_p"),], x=Istim, color=X, y=mean, geom="line", facets=.~Iosc) + theme_bw() + xlim(1,60) + xlab("") + ylab("MI")
+
+p2 <- qplot(data=h_exp1[mi_exp1$X %in% c("silenced_p", "stim_p"),], x=Istim, color=X, y=mean, geom="line", facets=.~Iosc) + theme_bw() + xlim(1,60) + xlab("") + ylab("H")
+
+p3 <- qplot(data=pac_exp1[mi_exp1$X %in% c("silenced_p", "stim_p"),], x=Istim, color=X, y=mean, geom="line", facets=.~Iosc) + theme_bw() + xlim(1,60) + xlab("Istim") + ylab("PAC")
+
+library(gridExtra)
+grid.arrange(p1, p2, p3, ncol=1)
+```
+
+```{r, warning=FALSE, echo=FALSE, fig.width=4, fig.height=8}
+p1 <- qplot(data=mi_exp1[mi_exp1$X %in% c("silenced_p"),], x=Istim, y=Iosc, fill=mean, geom="tile") + theme_minimal() + ggtitle("MI")
+
+p2 <- qplot(data=h_exp1[h_exp1$X %in% c("silenced_p"),], x=Istim, y=Iosc, fill=mean, geom="tile") + theme_minimal() + ggtitle("H")
+
+p3 <- qplot(data=pac_exp1[pac_exp1$X %in% c("silenced_p"),], x=Istim, y=Iosc, fill=mean, geom="tile") + theme_minimal() + ggtitle("PAC")
+
+grid.arrange(p1, p2, p3, ncol=1)
+```
+
+* Subtraction has sub-stimulus H and MI,
+* but strong and consistent robust PAC. As with the additive interaction, PAC declines wit Istim, 
+* but in this case increasing Iosc complelly mititgates the effect.
+
+# Binary (synchrony) coding
+
+## Stimulus encoding quality between Poisson and Binary codes.
+
+(An intial quick, dirty, comparison)
+
+First we just compare their respective stimulus encodings. K (network synchrony) was fixed for the binary sample.
+
+```{r, warning=FALSE, echo=FALSE, fig.width=8, fig.height=4}
+p1 <- qplot(data=mi_exp1[mi_exp1$X %in% c("stim_b", "stim_p"),], x=Istim, color=X, y=mean, geom="line", facets=.~Iosc) + theme_bw() + xlim(1,60) + xlab("") + ylab("MI")
+
+p2 <- qplot(data=h_exp1[mi_exp1$X %in% c("stim_b", "stim_p"),], x=Istim, color=X, y=mean, geom="line", facets=.~Iosc) + theme_bw() + xlim(1,60) + xlab("Istim") + ylab("H")
+grid.arrange(p1, p2, ncol=1)
+```
+
+* MI and H higher for Poisson coding,
+* but the `excitability` of the binary model was very low (excitability = 0.00001). See Exp 4?
+
+## Increasing synchrony (k)
+
+Driving rate was held constant, as was excitability, while k was increased.  Two fixed rates were examined, a high (30 Hz) and a low (2 Hz). These analyses focus on the gain (multiplicative) interaction only. 
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+exp2path <- paste(path, "/exp2/", sep="")
+
+ks <- c(1, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100)
+rates <- c(2, 30)
+
+mi_exp2 <- NULL
+for(k in ks){
+  try({
+    name <- paste("Iosc-", as.character(rates[1]), "_Istim-", 
+                  as.character(rates[2]), "_k-", as.character(k),
+                  "_MI_summary.csv", sep="")
+    di <- read.csv(paste(exp2path, name, sep=""))
+    di["ks"] <- rep(k, nrow(di))
+    mi_exp2 <- rbind(mi_exp2, di)  
+    }) 
+}
+
+h_exp2 <- NULL
+for(k in ks){
+  try({
+    name <- paste("Iosc-", as.character(rates[1]), "_Istim-", 
+                  as.character(rates[2]), "_k-", as.character(k),
+                  "_H_summary.csv", sep="")
+    di <- read.csv(paste(exp2path, name, sep=""))
+    di["ks"] <- rep(k, nrow(di))
+    h_exp2 <- rbind(h_exp2, di)  
+    }) 
+}
+
+pac_exp2 <- NULL
+for(k in ks){
+  try({
+    name <- paste("Iosc-", as.character(rates[1]), "_Istim-", 
+                  as.character(rates[2]), "_k-", as.character(k),
+                  "_PAC_summary.csv", sep="")
+    di <- read.csv(paste(exp2path, name, sep=""))
+    di["ks"] <- rep(k, nrow(di))
+    pac_exp2 <- rbind(pac_exp2, di)  
+    }) 
+}
+```
+
+### Compare increasing synchrony (k) to fixed Poisson rate.
+
+```{r, echo=FALSE, warning=FALSE, fig.width=3, fig.height=4}
+p1 <- qplot(data=mi_exp2[mi_exp2$X %in% c("stim_b", "stim_p"),], x=ks, color=X, y=mean, geom="line") + theme_bw() + xlim(1,60) + xlab("k") + ylab("MI")
+
+p2 <- qplot(data=h_exp2[h_exp2$X %in% c("stim_b", "stim_p"),], x=ks, color=X, y=mean, geom="line") + theme_bw() + xlim(1,60) + xlab("k") + ylab("H")
+
+grid.arrange(p1, p2, ncol=1)
+```
+
+* For rates below 20 Hz, Poisson provides higher MI. 
+* By 20 Hz the two codes are equivilant. 
+* In all cases Poission coding has higher H.
+
+### High stimulus rate, low oscillation rate
+
+```{r, echo=FALSE, warning=FALSE, fig.width=3, fig.height=5}
+p1 <- qplot(data=mi_exp2[mi_exp2$X %in% c("gain_b", "stim_b"),], x=ks, color=X, y=mean, geom="line") + theme_bw() + xlim(1,60) + xlab("") + ylab("MI")
+
+p2 <- qplot(data=h_exp2[h_exp2$X %in% c("gain_b", "stim_b"),], x=ks, color=X, y=mean, geom="line") + theme_bw() + xlim(1,60) + xlab("") + ylab("H")
+
+p3 <- qplot(data=pac_exp2[pac_exp2$X %in% c("gain_b", "stim_b"),], x=ks, color=X, y=mean, geom="line") + theme_bw() + xlim(1,60) + xlab("k") + ylab("PAC")
+
+grid.arrange(p1, p2, p3, ncol=1)
+```
+
+* Low stimulus has worse MI and H than Poisson (not shown).
+* Low k (below 10) improves MI over stimulus, followed by a plateau.
+* As K increases so does H in both stimulus and gain, while
+* gain is larger overall.
