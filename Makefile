@@ -23,7 +23,7 @@ exp3:
 	-rm data/exp3/*
 	nice -19 python exp/exp3.py data/exp3/
 
-# Explore relation between k and firing rate
+# Explore relation between k and excitability
 # for fixed abs rate and f
 exp4:
 	-mkdir data/exp4
