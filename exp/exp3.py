@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
-"""PAC and information and Poisson rate."""
+"""PAC and information and Poisson rate by frequency."""
 # import numpy as np
 import pyentropy as en
 import matplotlib.pyplot as plt; plt.ion()
@@ -108,20 +108,20 @@ if __name__ == "__main__":
     dt = 0.001
 
     # Ranges of these will be analzed in seperate exp.
-    f = 10
     k = 50
     excitability = 0.00001
 
     Sstim = .05
-    Ioscs = range(2, 60, 4)
-    Istims = range(2, 60, 4)
-    params = product(Ioscs, Istims)
+    Ioscs = [2, 30]
+    Istims = [2, 30]
+    fs = [6, 10, 20, 30, 50]
+    params = product(Ioscs, Istims, fs)
 
     iterations = range(100)
-    for Iosc, Istim in params:
+    for Iosc, Istim, f in params:
         # Create basename for the data
-        basename = "Iosc-{0}_Istim-{1}".format(
-                Iosc, Istim)
+        basename = "Iosc-{0}_Istim-{1}_f-{2}".format(
+                Iosc, Istim, f)
         basepath = os.path.join(path, basename)
 
         # Tmp dicts for each param set
@@ -165,4 +165,3 @@ if __name__ == "__main__":
 
         sum_PAC = df_PAC.describe(percentiles=[.05, .25, .75, .95]).T
         sum_PAC.to_csv(basepath + "_PAC_summary.csv")
-

@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
-"""PAC and information and Poisson rate."""
-# import numpy as np
+"""PAC and information and Binary firing and excitability."""
+import numpy as np
 import pyentropy as en
 import matplotlib.pyplot as plt; plt.ion()
 
@@ -89,7 +89,8 @@ def main(n, t, Iosc, f, Istim, Sstim, dt, k_spikes, excitability):
     return {
         'MI' : d_mis,
         'H' : d_hs,
-        'PAC' : d_pacs
+        'PAC' : d_pacs,
+        'spikes' : d_spikes
     }
 
 
@@ -106,32 +107,33 @@ if __name__ == "__main__":
     n = 500
     t = 3
     dt = 0.001
-
-    # Ranges of these will be analzed in seperate exp.
     f = 10
-    k = 50
-    excitability = 0.00001
-
     Sstim = .05
-    Ioscs = range(2, 60, 4)
-    Istims = range(2, 60, 4)
-    params = product(Ioscs, Istims)
 
-    iterations = range(100)
-    for Iosc, Istim in params:
+    Iosc = 5
+    Istim = 5
+
+    excitabilites = np.linspace(0.001, 0.00001, 20)
+    ks = [1, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
+
+    params = product(ks, excitabilites)
+
+    iterations = range(20)
+    for k, ex in params:
         # Create basename for the data
-        basename = "Iosc-{0}_Istim-{1}".format(
-                Iosc, Istim)
+        basename = "k-{0}_ex-{1}".format(
+                k, ex)
         basepath = os.path.join(path, basename)
 
         # Tmp dicts for each param set
         d_H = defaultdict(list)
         d_MI = defaultdict(list)
         d_PAC = defaultdict(list)
+        d_rate = defaultdict(list)
 
         # -- Run
         for i in iterations:
-            res = main(n, t, Iosc, f, Istim, Sstim, dt, k, excitability)
+            res = main(n, t, Iosc, f, Istim, Sstim, dt, k, ex)
 
             # Process the result
             hys = {}
@@ -143,6 +145,10 @@ if __name__ == "__main__":
                 d_MI[b].append(res['MI'][b])
             for b in res['PAC'].keys():
                 d_PAC[b].append(res['PAC'][b])
+
+            for b in res['spikes'].keys():
+                mrate = np.mean(res['spikes'][b].sum(0) / float(t))
+                d_rate[b].append(mrate)
 
         # -- Save
         # H
@@ -166,3 +172,9 @@ if __name__ == "__main__":
         sum_PAC = df_PAC.describe(percentiles=[.05, .25, .75, .95]).T
         sum_PAC.to_csv(basepath + "_PAC_summary.csv")
 
+        # rate
+        df_rate = pd.DataFrame(d_rate)
+        df_rate.to_csv(basepath + "_rate.csv", index=False)
+
+        sum_rate = df_rate.describe(percentiles=[.05, .25, .75, .95]).T
+        sum_rate.to_csv(basepath + "_rate_summary.csv")

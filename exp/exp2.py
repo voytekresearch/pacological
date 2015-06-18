@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
-"""PAC and information and Poisson rate."""
+"""PAC and information and Binary firing."""
 # import numpy as np
 import pyentropy as en
 import matplotlib.pyplot as plt; plt.ion()
@@ -109,19 +109,20 @@ if __name__ == "__main__":
 
     # Ranges of these will be analzed in seperate exp.
     f = 10
-    k = 50
-    excitability = 0.00001
+    excitability = 0.0001
 
     Sstim = .05
-    Ioscs = range(2, 60, 4)
-    Istims = range(2, 60, 4)
-    params = product(Ioscs, Istims)
+    Ioscs = [2, 30]
+    Istims = [2, 30]
+    ks = [1, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
+
+    params = product(Ioscs, Istims, ks)
 
     iterations = range(100)
-    for Iosc, Istim in params:
+    for Iosc, Istim, k in params:
         # Create basename for the data
-        basename = "Iosc-{0}_Istim-{1}".format(
-                Iosc, Istim)
+        basename = "Iosc-{0}_Istim-{1}_k-{2}".format(
+                Iosc, Istim, k)
         basepath = os.path.join(path, basename)
 
         # Tmp dicts for each param set
