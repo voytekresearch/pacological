@@ -112,7 +112,7 @@ if __name__ == "__main__":
 
     Ioscs = [5, 10, 15, 20, 25, 30]
     Istims = [5, 10, 15, 20, 25, 30]
-    excitabilites = np.linspace(0.1, 0.001, 20)
+    excitabilites = [0.2, 0.1, 0.05]
 
     params = product(Ioscs, Istims, excitabilites)
 

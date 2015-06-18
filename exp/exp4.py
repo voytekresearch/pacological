@@ -113,7 +113,7 @@ if __name__ == "__main__":
     Iosc = 5
     Istim = 5
 
-    excitabilites = np.linspace(0.001, 0.00001, 20)
+    excitabilites = [0.001, 0.005, 0.0001, 0.0005, 0.00001]
     ks = [1, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
 
     params = product(ks, excitabilites)
