@@ -6,23 +6,27 @@ import numpy as np
 from pacological import pac
 from noisy import lfp
 
+import seaborn as sns
+import matplotlib.pyplot as plt; plt.ion()
+
 path = sys.argv[1]
 
 # -- USER SETTINGS -----------------------------------------------------------
 n = 500
-t = 3
+t = 10
 
-Iosc = 10
-f = 12
+Iosc = 6
+f = 10
 
-Istim = 5
-Sstim = 1
+Istim = 3
+Sstim = .05
 
 dt = 0.001
 rate = 1 / dt
 
 k = 80
 excitability = 0.00001
+excitability_be  = 0.1
 
 # -- SIM ---------------------------------------------------------------------
 # Init spikers
@@ -54,6 +58,8 @@ d_spikes['stim_est_p'] = modspikes.poisson(d_bias['stim'])
 ns, ts = pac.to_spiketimes(times, d_spikes['stim_est_p'])
 pd.DataFrame(np.vstack([ns, ts]).T, columns=['neuron', 'time']).to_csv(
     os.path.join(path, "spikes_stim_est_p.csv"), index=False)
+plt.subplot(211)
+plt.plot(ts, ns, 'o')
 
 d_spikes['osc_p'] = modspikes.poisson(d_bias['osc'])
 ns, ts = pac.to_spiketimes(times, d_spikes['osc_p'])
@@ -106,8 +112,43 @@ ns, ts = pac.to_spiketimes(times, d_spikes['gain_bp'])
 pd.DataFrame(np.vstack([ns, ts]).T, columns=['neuron', 'time']).to_csv(
     os.path.join(path, "spikes_gain_bp.csv"), index=False)
 
+# Beroulli
+d_spikes['stim_est_be'] = modspikes.bernoulli(d_bias['stim'], excitability=excitability_be)
+ns, ts = pac.to_spiketimes(times, d_spikes['stim_est_be'])
+pd.DataFrame(np.vstack([ns, ts]).T, columns=['neuron', 'time']).to_csv(
+    os.path.join(path, "spikes_stim_est_be.csv"), index=False)
+
+plt.subplot(212)
+plt.plot(ts, ns, 'o')
+
+d_spikes['osc_be'] = modspikes.bernoulli(d_bias['osc'], excitability=excitability_be)
+ns, ts = pac.to_spiketimes(times, d_spikes['osc_be'])
+pd.DataFrame(np.vstack([ns, ts]).T, columns=['neuron', 'time']).to_csv(
+    os.path.join(path, "spikes_osc_be.csv"), index=False)
+
+d_spikes['gain_be'] = modspikes.bernoulli(d_bias['gain'], excitability=excitability_be)
+ns, ts = pac.to_spiketimes(times, d_spikes['gain_be'])
+pd.DataFrame(np.vstack([ns, ts]).T, columns=['neuron', 'time']).to_csv(
+    os.path.join(path, "spikes_gain_be.csv"), index=False)
+
+d_spikes['summed_be'] = modspikes.bernoulli(d_bias['summed'], excitability=excitability_be)
+ns, ts = pac.to_spiketimes(times, d_spikes['summed_be'])
+pd.DataFrame(np.vstack([ns, ts]).T, columns=['neuron', 'time']).to_csv(
+    os.path.join(path, "spikes_summed_be.csv"), index=False)
+
+d_spikes['silenced_be'] = modspikes.bernoulli(d_bias['silenced'], excitability=excitability_be)
+ns, ts = pac.to_spiketimes(times, d_spikes['silenced_be'])
+pd.DataFrame(np.vstack([ns, ts]).T, columns=['neuron', 'time']).to_csv(
+    os.path.join(path, "spikes_silenced_be.csv"), index=False)
+
+d_spikes['gain_bep'] = modspikes.poisson_bernoulli(d_bias['stim'], d_bias['osc'], excitability=excitability_be)
+ns, ts = pac.to_spiketimes(times, d_spikes['gain_bep'])
+pd.DataFrame(np.vstack([ns, ts]).T, columns=['neuron', 'time']).to_csv(
+    os.path.join(path, "spikes_gain_bep.csv"), index=False)
+
 # -- CREATE LFP --------------------------------------------------------------
 d_lfps = {}
+d_lfps['times'] = times
 d_lfps['stim_est_p'] = lfp.create_lfps(d_spikes['stim_est_p'])
 d_lfps['osc_p'] = lfp.create_lfps(d_spikes['osc_p'])
 d_lfps['gain_p'] = lfp.create_lfps(d_spikes['gain_p'])
