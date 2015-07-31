@@ -70,23 +70,20 @@ class Spikes(object):
         return self._refractory(spikes)
 
     def bernoulli(self, rates, excitability=0.1):
-        self._constraints(rates, rates)  # does no harm to check twice
+        self._constraints(rates, rates)
 
         ps = rates * excitability
-        ns = range(self.n)
-        np.random.shuffle(ns)
+        js = np.arange(self.n, dtype=int)
 
         spikes = np.zeros_like(self.unifs, np.int)
-        for i in xrange(int(self.t * (1.0 / self.dt))):
-            js = np.arange(self.n, dtype=int)
-            np.random.shuffle(js)
-
+        for i in xrange(self.n_steps):
             # Grab a random j and lookup its u at i
             # if u <= p add spike to j,
             # and draw j again.
             #
             # Repeat until we're out of j
             # or u > p
+            np.random.shuffle(js)
             for j in js:
                 if self.unifs[i, j] <= ps[i]:
                     spikes[i, j] = 1
@@ -113,36 +110,35 @@ class Spikes(object):
         else:
             spks_b = self.bernoulli(drive * normed, excitability)
 
-        # Justification:
-        # 'Partitioning neural variability'
-        # 'Gamma oscillations of spiking neural populations
-        # enhance signal discrimination.'
-        # 'Binary Spiking in Auditory Cortex'
-
         spks = spks_p + spks_b
         spks[spks > 1] = 1  # Clip double spikes
 
         return self._refractory(spks)
 
     def binary(self, rates, k=3, excitability=0.001):
+        # Justification:
+        # 'Partitioning neural variability'
+        # 'Gamma oscillations of spiking neural populations
+        # enhance signal discrimination.'
+        # 'Binary Spiking in Auditory Cortex'
         self._constraints(rates, rates)  # does no harm to check twice
 
         ps = rates * excitability
-        ns = range(self.n)
+        ns = np.arange(self.n)
         np.random.shuffle(ns)
 
         spikes = np.zeros_like(self.unifs, np.int)
-        for i in xrange(int(self.t * (1.0 / self.dt))):
+        for i in xrange(self.n_steps):
             for j in xrange(self.n):
                 # If bernoilli success, neuron_i_j spikes
                 # as does some of it's randomly selected
                 # neighbors.
-                # TODO - should ensure that j is not equal to jn
                 if self.unifs[i, j] < ps[i]:
                     spikes[i, j] = 1
 
-                    np.random.shuffle(ns)
-                    for jn in ns[0:k]:
+                    no_j = ns[ns != j]
+                    np.random.shuffle(no_j)
+                    for jn in no_j[0:k]:
                         spikes[i, jn] = 1
 
         return self._refractory(spikes)

@@ -10,7 +10,7 @@ output:
 ---
 
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE}
+```{r exp6_rate, echo=FALSE, warning=FALSE, message=FALSE}
 library(ggplot2)
 library(gridExtra)
 
