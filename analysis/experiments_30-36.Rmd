@@ -1,0 +1,339 @@
+---
+title: "Experiments 30-36"
+author: "Erik J Peterson"
+date: "June 18, 2015"
+output:
+  html_document:
+    number_sections: yes
+    theme: spacelab
+    toc: yes
+---
+
+# Binary-type synchrony
+
+```{r helper_fns, echo=FALSE}
+load.data <- function(path, type, rates, ks){
+  dexp <- NULL
+  for(r_o in rates){
+    for(r_s in rates){
+      for(k in ks){
+        try({
+          name <- paste("Iosc-", as.character(r_o), 
+                      "_Istim-", as.character(r_s), 
+                      "_k", as.character(k), 
+                      "_", as.character(type), 
+                      "_summary.csv", sep="")
+          di <- read.csv(paste(path, name, sep=""))
+          di["Iosc"] <- rep(r_o, nrow(di))
+          di["Istim"] <- rep(r_s, nrow(di))
+          di["k"] <- rep(k, nrow(di))
+          
+          dexp <- rbind(dexp, di)  
+       })
+      }
+    }
+  }
+dexp
+}
+```
+
+```{r load, echo=FALSE, warning=FALSE, message=FALSE}
+library(ggplot2)
+library(gridExtra)
+
+path <- "/home/ejp/src/pacological/data"
+rates <- c(5, 30)
+ks <- c(2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30)
+
+exp30path <- paste(path, "/exp30/", sep="")
+mi_exp30 <- load.data(exp30path, "MI", rates, ks)
+h_exp30 <- load.data(exp30path, "H", rates, ks)
+pac_exp30 <- load.data(exp30path, "PAC", rates, ks)
+
+exp31path <- paste(path, "/exp31/", sep="")
+mi_exp31 <- load.data(exp31path, "MI", rates, ks)
+h_exp31 <- load.data(exp31path, "H", rates, ks)
+pac_exp31 <- load.data(exp31path, "PAC", rates, ks)
+
+exp32path <- paste(path, "/exp32/", sep="")
+mi_exp32 <- load.data(exp32path, "MI", rates, ks)
+h_exp32 <- load.data(exp32path, "H", rates, ks)
+pac_exp32 <- load.data(exp32path, "PAC", rates, ks)
+
+exp33path <- paste(path, "/exp33/", sep="")
+mi_exp33 <- load.data(exp33path, "MI", rates, ks)
+h_exp33 <- load.data(exp33path, "H", rates, ks)
+pac_exp33 <- load.data(exp33path, "PAC", rates, ks)
+
+exp34path <- paste(path, "/exp34/", sep="")
+mi_exp34 <- load.data(exp34path, "MI", rates, ks)
+h_exp34 <- load.data(exp34path, "H", rates, ks)
+pac_exp34 <- load.data(exp34path, "PAC", rates, ks)
+
+exp35path <- paste(path, "/exp35/", sep="")
+mi_exp35 <- load.data(exp35path, "MI", rates, ks)
+h_exp35 <- load.data(exp35path, "H", rates, ks)
+pac_exp35 <- load.data(exp35path, "PAC", rates, ks)
+
+exp36path <- paste(path, "/exp36/", sep="")
+mi_exp36 <- load.data(exp36path, "MI", rates, ks)
+h_exp36 <- load.data(exp36path, "H", rates, ks)
+pac_exp36 <- load.data(exp36path, "PAC", rates, ks)
+rm(ks, rates)
+```
+
+## Exp 30
+
+N = 100
+
+```{r exp30, echo=FALSE, fig.width=10, fig.height=4}
+p1 <- qplot(
+  data=mi_exp30[mi_exp30$X %in% c("gain_bp"),], 
+  x=k, y=mean,
+  group=Iosc, 
+  geom="line") + 
+  theme_bw() + 
+  xlim(1,30) + 
+  xlab("K") + 
+  ylab("MI") + 
+  stat_summary(
+    data=mi_exp30[mi_exp30$X %in% c("stim_p"),], 
+    aes(x=k, y=mean), 
+    geom="line", 
+    fun.y=mean, 
+    color="red") + 
+  ggtitle("Exp 30") + 
+  facet_grid(Iosc~Istim)
+
+p2 <- qplot(
+  data=h_exp30[h_exp30$X %in% c("gain_bp"),], 
+  x=k, y=mean,
+  group=Iosc, 
+  geom="line") + 
+  theme_bw() + 
+  xlim(1,30) + 
+  xlab("K") + 
+  ylab("H") + 
+  stat_summary(
+    data=h_exp30[h_exp30$X %in% c("stim_p"),], 
+    aes(x=k, y=mean), 
+    geom="line", 
+    fun.y=mean, 
+    color="red") + 
+  ggtitle("Exp 30") + 
+  facet_grid(Iosc~Istim)
+
+p3 <- qplot(
+  data=pac_exp30[pac_exp30$X %in% c("gain_bp"),], 
+  x=k, y=mean,
+  group=Iosc, 
+  geom="line") + 
+  theme_bw() + 
+  xlim(1,30) + 
+  xlab("K") + 
+  ylab("PAC") + 
+  stat_summary(
+    data=pac_exp30[pac_exp30$X %in% c("stim_p"),], 
+    aes(x=k, y=mean), 
+    geom="line", 
+    fun.y=mean, 
+    color="red") + 
+  ggtitle("Exp 30") + 
+  facet_grid(Iosc~Istim)
+
+grid.arrange(p1, p2, p3, nrow=1)
+```
+
+## Exp 32
+
+N = 500
+
+```{r exp32, echo=FALSE, fig.width=10, fig.height=4}
+p1 <- qplot(
+  data=mi_exp32[mi_exp32$X %in% c("gain_bp"),], 
+  x=k, y=mean,
+  group=Iosc, 
+  geom="line") + 
+  theme_bw() + 
+  xlim(1,30) + 
+  xlab("K") + 
+  ylab("MI") + 
+  stat_summary(
+    data=mi_exp32[mi_exp32$X %in% c("stim_p"),], 
+    aes(x=k, y=mean), 
+    geom="line", 
+    fun.y=mean, 
+    color="red") + 
+  ggtitle("Exp 32") + 
+  facet_grid(Iosc~Istim)
+
+p2 <- qplot(
+  data=h_exp32[h_exp32$X %in% c("gain_bp"),], 
+  x=k, y=mean,
+  group=Iosc, 
+  geom="line") + 
+  theme_bw() + 
+  xlim(1,30) + 
+  xlab("K") + 
+  ylab("H") + 
+  stat_summary(
+    data=h_exp32[h_exp32$X %in% c("stim_p"),], 
+    aes(x=k, y=mean), 
+    geom="line", 
+    fun.y=mean, 
+    color="red") + 
+  ggtitle("Exp 32") + 
+  facet_grid(Iosc~Istim)
+
+p3 <- qplot(
+  data=pac_exp32[pac_exp32$X %in% c("gain_bp"),], 
+  x=k, y=mean,
+  group=Iosc, 
+  geom="line") + 
+  theme_bw() + 
+  xlim(1,30) + 
+  xlab("K") + 
+  ylab("PAC") + 
+  stat_summary(
+    data=pac_exp32[pac_exp32$X %in% c("stim_p"),], 
+    aes(x=k, y=mean), 
+    geom="line", 
+    fun.y=mean, 
+    color="red") + 
+  ggtitle("Exp 32") + 
+  facet_grid(Iosc~Istim)
+
+grid.arrange(p1, p2, p3, nrow=1)
+```
+
+## Exp 34
+
+N = 1000
+
+```{r exp34, echo=FALSE, fig.width=10, fig.height=4}
+p1 <- qplot(
+  data=mi_exp34[mi_exp34$X %in% c("gain_bp"),], 
+  x=k, y=mean,
+  group=Iosc, 
+  geom="line") + 
+  theme_bw() + 
+  xlim(1,30) + 
+  xlab("K") + 
+  ylab("MI") + 
+  stat_summary(
+    data=mi_exp34[mi_exp34$X %in% c("stim_p"),], 
+    aes(x=k, y=mean), 
+    geom="line", 
+    fun.y=mean, 
+    color="red") + 
+  ggtitle("Exp 34") + 
+  facet_grid(Iosc~Istim)
+
+p2 <- qplot(
+  data=h_exp34[h_exp34$X %in% c("gain_bp"),], 
+  x=k, y=mean,
+  group=Iosc, 
+  geom="line") + 
+  theme_bw() + 
+  xlim(1,30) + 
+  xlab("K") + 
+  ylab("H") + 
+  stat_summary(
+    data=h_exp34[h_exp34$X %in% c("stim_p"),], 
+    aes(x=k, y=mean), 
+    geom="line", 
+    fun.y=mean, 
+    color="red") + 
+  ggtitle("Exp 34") + 
+  facet_grid(Iosc~Istim)
+
+p3 <- qplot(
+  data=pac_exp34[pac_exp34$X %in% c("gain_bp"),], 
+  x=k, y=mean,
+  group=Iosc, 
+  geom="line") + 
+  theme_bw() + 
+  xlim(1,30) + 
+  xlab("K") + 
+  ylab("PAC") + 
+  stat_summary(
+    data=pac_exp34[pac_exp34$X %in% c("stim_p"),], 
+    aes(x=k, y=mean), 
+    geom="line", 
+    fun.y=mean, 
+    color="red") + 
+  ggtitle("Exp 34") + 
+  facet_grid(Iosc~Istim)
+
+grid.arrange(p1, p2, p3, nrow=1)
+```
+
+# Additive and synchronous
+
+```{r exp36, echo=FALSE, fig.width=10, fig.height=4}
+p1 <- qplot(
+  data=mi_exp36[mi_exp36$X %in% c("gain_bp"),], 
+  x=k, y=mean,
+  group=Iosc, 
+  geom="line") + 
+  theme_bw() + 
+  xlim(1,30) + 
+  xlab("K") + 
+  ylab("MI") + 
+  stat_summary(
+    data=mi_exp36[mi_exp36$X %in% c("stim_p"),], 
+    aes(x=k, y=mean), 
+    geom="line", 
+    fun.y=mean, 
+    color="red") + 
+  ggtitle("Exp 36") + 
+  facet_grid(Iosc~Istim)
+
+p2 <- qplot(
+  data=h_exp36[h_exp36$X %in% c("gain_bp"),], 
+  x=k, y=mean,
+  group=Iosc, 
+  geom="line") + 
+  theme_bw() + 
+  xlim(1,30) + 
+  xlab("K") + 
+  ylab("H") + 
+  stat_summary(
+    data=h_exp36[h_exp36$X %in% c("stim_p"),], 
+    aes(x=k, y=mean), 
+    geom="line", 
+    fun.y=mean, 
+    color="red") + 
+  ggtitle("Exp 36") + 
+  facet_grid(Iosc~Istim)
+
+p3 <- qplot(
+  data=pac_exp36[pac_exp36$X %in% c("gain_bp"),], 
+  x=k, y=mean,
+  group=Iosc, 
+  geom="line") + 
+  theme_bw() + 
+  xlim(1,30) + 
+  xlab("K") + 
+  ylab("PAC") + 
+  stat_summary(
+    data=pac_exp36[pac_exp36$X %in% c("stim_p"),], 
+    aes(x=k, y=mean), 
+    geom="line", 
+    fun.y=mean, 
+    color="red") + 
+  ggtitle("Exp 36") + 
+  facet_grid(Iosc~Istim)
+
+grid.arrange(p1, p2, p3, nrow=1)
+```
+
+# Conclusions
+
+* Little here is as expected....
+* MI always worse compared to stimulus
+* PAC is weak when oscillation is strong
+* PAC often declines as k increases
+* As expected from additive rate exps (e.g. exp17-21), no improvement in MI for exp 36.
+
+**Need to rethink the underlying synchrony model and redo in a way that makes sense for the way I'm defining coding and measuring MI/H.**

@@ -149,19 +149,19 @@ pd.DataFrame(np.vstack([ns, ts]).T, columns=['neuron', 'time']).to_csv(
 # -- CREATE LFP --------------------------------------------------------------
 d_lfps = {}
 d_lfps['times'] = times
-d_lfps['stim_est_p'] = lfp.create_lfps(d_spikes['stim_est_p'])
-d_lfps['osc_p'] = lfp.create_lfps(d_spikes['osc_p'])
-d_lfps['gain_p'] = lfp.create_lfps(d_spikes['gain_p'])
-d_lfps['summed_p'] = lfp.create_lfps(d_spikes['summed_p'])
-d_lfps['silenced_p'] = lfp.create_lfps(d_spikes['silenced_p'])
+d_lfps['stim_est_p'] = lfp.create_synaptic_lfps(d_spikes['stim_est_p'])
+d_lfps['osc_p'] = lfp.create_synaptic_lfps(d_spikes['osc_p'])
+d_lfps['gain_p'] = lfp.create_synaptic_lfps(d_spikes['gain_p'])
+d_lfps['summed_p'] = lfp.create_synaptic_lfps(d_spikes['summed_p'])
+d_lfps['silenced_p'] = lfp.create_synaptic_lfps(d_spikes['silenced_p'])
 
-d_lfps['stim_est_b'] = lfp.create_lfps(d_spikes['stim_est_b'])
-d_lfps['osc_b'] = lfp.create_lfps(d_spikes['osc_b'])
-d_lfps['gain_b'] = lfp.create_lfps(d_spikes['gain_b'])
-d_lfps['summed_b'] = lfp.create_lfps(d_spikes['summed_b'])
-d_lfps['silenced_b'] = lfp.create_lfps(d_spikes['silenced_b'])
+d_lfps['stim_est_b'] = lfp.create_synaptic_lfps(d_spikes['stim_est_b'])
+d_lfps['osc_b'] = lfp.create_synaptic_lfps(d_spikes['osc_b'])
+d_lfps['gain_b'] = lfp.create_synaptic_lfps(d_spikes['gain_b'])
+d_lfps['summed_b'] = lfp.create_synaptic_lfps(d_spikes['summed_b'])
+d_lfps['silenced_b'] = lfp.create_synaptic_lfps(d_spikes['silenced_b'])
 
-d_lfps['gain_bp'] = lfp.create_lfps(d_spikes['gain_bp'])
+d_lfps['gain_bp'] = lfp.create_synaptic_lfps(d_spikes['gain_bp'])
 
 
 df_lfps = pd.DataFrame(d_lfps)

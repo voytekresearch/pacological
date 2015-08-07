@@ -7,12 +7,12 @@ import matplotlib.pyplot as plt; plt.ion()
 
 from pacological import pac
 from noisy import lfp
-from neurosrc.pac.pac_tools import pac as scpac
+from neurosrc.spectral.pac import scpac
 # from brian import correlogram
 
 def run(n, t, Iosc, f, Istim, Sstim, dt, k_spikes, excitability,
          pac_type='plv'):
-    # rate = 1.0 / dt
+    rate = 1.0 / dt
 
     # -- SIM ---------------------------------------------------------------------
     # Init spikers
@@ -37,6 +37,7 @@ def run(n, t, Iosc, f, Istim, Sstim, dt, k_spikes, excitability,
     # study how different modulation schemes interact
     # with it
     d_spikes = {}
+    d_spikes['drive_p'] = stim_sp
     for k in d_bias.keys():
         d_spikes[k + "_p"] = modspikes.poisson(d_bias[k])
 
@@ -53,13 +54,13 @@ def run(n, t, Iosc, f, Istim, Sstim, dt, k_spikes, excitability,
 
     # -- I -----------------------------------------------------------------------
     to_calc = ('HX', 'HY', 'HXY')
-    m = 8  # Per Ince's advice
+    m = 20  # Per Ince's advice
     d_infos = {}
-    for k in d_spikes.keys():
+    for k in d_lfps.keys():
         d_infos[k] = en.DiscreteSystem(
-            en.quantise_discrete(stim_sp.sum(1), m),
+            en.quantise(d_lfps['drive_p'], m)[0],
             (1, m),
-            en.quantise_discrete(d_spikes[k].sum(1), m),
+            en.quantise(d_lfps[k], m)[0],
             (1, m)
         )
         d_infos[k].calculate_entropies(method='pt', calc=to_calc)
@@ -78,17 +79,18 @@ def run(n, t, Iosc, f, Istim, Sstim, dt, k_spikes, excitability,
     low_f = (f-2, f+2)
     high_f = (80, 250)
     method = pac_type
+    filt = 'eegfilt'
+    kwargs = {'trans' : .15} # for eegfilt
 
     d_pacs = {}
     for k in d_lfps.keys():
-        _, _, d_pacs[k], _ = scpac(d_lfps[k], low_f, high_f, method)
+        d_pacs[k] = scpac(d_lfps[k], low_f, high_f, rate, method, filt, **kwargs)
 
     return {
         'MI' : d_mis,
         'H' : d_hs,
         'PAC' : d_pacs,
-        'spikes' : d_spikes,
-        'times' : times
+        'spikes' : d_spikes
     }
 
 
@@ -102,7 +104,7 @@ if __name__ == "__main__":
     path = sys.argv[1]
 
     # -- USER SETTINGS --------------------------------------------------------
-    n = 5000
+    n = 250
     t = 5
     dt = 0.001
     f = 10

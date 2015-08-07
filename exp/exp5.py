@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt; plt.ion()
 
 from pacological import pac
 from noisy import lfp
-from neurosrc.spectral.pac import scpac
+from neurosrc.pac.pac_tools import pac as scpac
 # from brian import correlogram
 
 

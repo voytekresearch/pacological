@@ -12,7 +12,7 @@ from neurosrc.pac.pac_tools import pac as scpac
 
 def run(n, t, Iosc, f, Istim, Sstim, dt, k_spikes, excitability,
          pac_type='plv'):
-    # rate = 1.0 / dt
+    rate = 1.0 / dt
 
     # -- SIM ---------------------------------------------------------------------
     # Init spikers
@@ -53,7 +53,7 @@ def run(n, t, Iosc, f, Istim, Sstim, dt, k_spikes, excitability,
 
     # -- I -----------------------------------------------------------------------
     to_calc = ('HX', 'HY', 'HXY')
-    m = 8  # Per Ince's advice
+    m = 20  # Per Ince's advice
     d_infos = {}
     for k in d_spikes.keys():
         d_infos[k] = en.DiscreteSystem(
@@ -78,17 +78,18 @@ def run(n, t, Iosc, f, Istim, Sstim, dt, k_spikes, excitability,
     low_f = (f-2, f+2)
     high_f = (80, 250)
     method = pac_type
+    filt = 'eegfilt'
+    kwargs = {'trans' : .15} # for eegfilt
 
     d_pacs = {}
     for k in d_lfps.keys():
-        _, _, d_pacs[k], _ = scpac(d_lfps[k], low_f, high_f, method)
+        d_pacs[k] = scpac(d_lfps[k], low_f, high_f, rate, method, filt, **kwargs)
 
     return {
         'MI' : d_mis,
         'H' : d_hs,
         'PAC' : d_pacs,
-        'spikes' : d_spikes,
-        'times' : times
+        'spikes' : d_spikes
     }
 
 
@@ -102,7 +103,7 @@ if __name__ == "__main__":
     path = sys.argv[1]
 
     # -- USER SETTINGS --------------------------------------------------------
-    n = 5000
+    n = 100
     t = 5
     dt = 0.001
     f = 10

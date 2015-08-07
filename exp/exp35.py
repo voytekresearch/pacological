@@ -7,12 +7,12 @@ import matplotlib.pyplot as plt; plt.ion()
 
 from pacological import pac
 from noisy import lfp
-from neurosrc.pac.pac_tools import pac as scpac
+from neurosrc.spectral.pac import scpac
 # from brian import correlogram
 
 def run(n, t, Iosc, f, Istim, Sstim, dt, k_spikes, excitability,
          pac_type='plv'):
-    # rate = 1.0 / dt
+    rate = 1.0 / dt
 
     # -- SIM ---------------------------------------------------------------------
     # Init spikers
@@ -43,7 +43,7 @@ def run(n, t, Iosc, f, Istim, Sstim, dt, k_spikes, excitability,
     if k_spikes > 0:
         d_spikes['gain_bp'] = modspikes.poisson_binary(
             d_bias['stim'], d_bias['osc'], k=k_spikes,
-            excitability=excitability
+            excitability=excitability, amplitude=True
         )
 
     # -- CREATE LFP --------------------------------------------------------------
@@ -78,17 +78,18 @@ def run(n, t, Iosc, f, Istim, Sstim, dt, k_spikes, excitability,
     low_f = (f-2, f+2)
     high_f = (80, 250)
     method = pac_type
+    filt = 'eegfilt'
+    kwargs = {'trans' : .15} # for eegfilt
 
     d_pacs = {}
     for k in d_lfps.keys():
-        _, _, d_pacs[k], _ = scpac(d_lfps[k], low_f, high_f, method)
+        d_pacs[k] = scpac(d_lfps[k], low_f, high_f, rate, method, filt, **kwargs)
 
     return {
         'MI' : d_mis,
         'H' : d_hs,
         'PAC' : d_pacs,
-        'spikes' : d_spikes,
-        'times' : times
+        'spikes' : d_spikes
     }
 
 
@@ -102,7 +103,7 @@ if __name__ == "__main__":
     path = sys.argv[1]
 
     # -- USER SETTINGS --------------------------------------------------------
-    n = 5000
+    n = 100
     t = 5
     dt = 0.001
     f = 10
@@ -110,13 +111,13 @@ if __name__ == "__main__":
 
     # This ratio of k to excitability gives mean rates
     # equivilant to Poisson
-    k_base = 0
+    k_base = 1
     excitability_base = 0.0001
-    bin_multipliers = [1, ]
+    bin_multipliers = range(2, 32, 2)
 
     # Drives and iteration counter
-    Ioscs = range(2, 32, 2)
-    Istims = range(2, 32, 2)
+    Ioscs = [5, 30]
+    Istims = [5, 30]
     iterations = range(200)
 
     params = product(Ioscs, Istims, bin_multipliers)

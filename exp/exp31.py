@@ -2,97 +2,11 @@
 # -*- coding: utf-8 -*-
 """PAC as selective amplification and information transmission."""
 import numpy as np
-import pyentropy as en
 import matplotlib.pyplot as plt; plt.ion()
-
-from pacological import pac
-from noisy import lfp
-from neurosrc.pac.pac_tools import pac as scpac
-# from brian import correlogram
-
-def run(n, t, Iosc, f, Istim, Sstim, dt, k_spikes, excitability,
-         pac_type='plv'):
-    # rate = 1.0 / dt
-
-    # -- SIM ---------------------------------------------------------------------
-    # Init spikers
-    modspikes = pac.Spikes(n, t, dt=dt)
-    drivespikes = pac.Spikes(n, t, dt=dt)
-    times = modspikes.times  # brevity
-
-    # Create biases
-    d_bias = {}
-    d_bias['osc'] = pac.osc(times, Iosc, f)
-    d_bias['stim'] = pac.stim(times, Istim, Sstim)
-
-    d_bias['gain'] = d_bias['osc'] * d_bias['stim']
-    d_bias['gain_silenced'] = (d_bias['osc'] * d_bias['stim']) - d_bias['osc']
-    d_bias['summed'] = d_bias['osc'] + d_bias['stim']
-    d_bias['silenced'] = d_bias['stim'] - d_bias['osc']
-
-    # Simulate spiking
-    # Create a fixed noiseless stimulus pattern, then....
-    stim_sp = drivespikes.poisson(d_bias['stim'])
-
-    # study how different modulation schemes interact
-    # with it
-    d_spikes = {}
-    for k in d_bias.keys():
-        d_spikes[k + "_p"] = modspikes.poisson(d_bias[k])
-
-    if k_spikes > 0:
-        d_spikes['gain_bp'] = modspikes.poisson_binary(
-            d_bias['stim'], d_bias['osc'], k=k_spikes,
-            excitability=excitability
-        )
-
-    # -- CREATE LFP --------------------------------------------------------------
-    d_lfps = {}
-    for k in d_spikes.keys():
-        d_lfps[k] = lfp.create_synaptic_lfps(d_spikes[k])
-
-    # -- I -----------------------------------------------------------------------
-    to_calc = ('HX', 'HY', 'HXY')
-    m = 8  # Per Ince's advice
-    d_infos = {}
-    for k in d_spikes.keys():
-        d_infos[k] = en.DiscreteSystem(
-            en.quantise_discrete(stim_sp.sum(1), m),
-            (1, m),
-            en.quantise_discrete(d_spikes[k].sum(1), m),
-            (1, m)
-        )
-        d_infos[k].calculate_entropies(method='pt', calc=to_calc)
-
-    # MI
-    d_mis = {}
-    for k, mi in d_infos.items():
-        d_mis[k] = mi.I()
-
-    # H
-    d_hs = {}
-    for k, mi in d_infos.items():
-        d_hs[k] = mi.H
-
-    # -- PAC OF LFP --------------------------------------------------------------
-    low_f = (f-2, f+2)
-    high_f = (80, 250)
-    method = pac_type
-
-    d_pacs = {}
-    for k in d_lfps.keys():
-        _, _, d_pacs[k], _ = scpac(d_lfps[k], low_f, high_f, method)
-
-    return {
-        'MI' : d_mis,
-        'H' : d_hs,
-        'PAC' : d_pacs,
-        'spikes' : d_spikes,
-        'times' : times
-    }
 
 
 if __name__ == "__main__":
+    from pacological.exp.exp6 import run
     import sys
     import pandas as pd
     import os
@@ -102,7 +16,7 @@ if __name__ == "__main__":
     path = sys.argv[1]
 
     # -- USER SETTINGS --------------------------------------------------------
-    n = 5000
+    n = 250
     t = 5
     dt = 0.001
     f = 10
@@ -110,13 +24,13 @@ if __name__ == "__main__":
 
     # This ratio of k to excitability gives mean rates
     # equivilant to Poisson
-    k_base = 0
+    k_base = 1
     excitability_base = 0.0001
-    bin_multipliers = [1, ]
+    bin_multipliers = range(2, 32, 2)
 
     # Drives and iteration counter
-    Ioscs = range(2, 32, 2)
-    Istims = range(2, 32, 2)
+    Ioscs = [5, 30]
+    Istims = [5, 30]
     iterations = range(200)
 
     params = product(Ioscs, Istims, bin_multipliers)
