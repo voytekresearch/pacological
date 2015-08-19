@@ -8,7 +8,8 @@ from copy import deepcopy
 # Want MI = H_Net - H_drive
 # Gain should have two forms - rate and synch
 class Spikes(object):
-    def __init__(self, n, t, dt=0.001, refractory=0.002, seed=None):
+    def __init__(self, n, t, dt=0.001, refractory=0.002, seed=None,
+                 private_stdev=0):
 
         self.seed = seed
         np.random.seed(self.seed)
@@ -25,6 +26,7 @@ class Spikes(object):
         self.t = t
         self.n_steps = int(self.t * (1.0 / self.dt))
         self.times = np.linspace(0, self.t, self.n_steps)
+        self.private_stdev = private_stdev
 
         if refractory % self.dt != 0:
             raise ValueError("refractory must be a integer multiple of dt")
@@ -60,11 +62,16 @@ class Spikes(object):
     def poisson(self, rates):
         self._constraints(rates, rates)  # does no harm to check twice
 
-        # Method taken from
+        # No bias unless private_stdev is specified
+        biases = np.zeros(self.n)
+        if self.private_stdev > 0:
+            biases = np.random.normal(0, self.private_stdev, size=self.n)
+
+        # Poisson method taken from
         # http://www.cns.nyu.edu/~david/handouts/poisson.pdf
         spikes = np.zeros_like(self.unifs, np.int)
         for j in xrange(self.n):
-            mask = self.unifs[:,j] <= (rates * self.dt)
+            mask = self.unifs[:,j] <= ((rates + biases[j]) * self.dt)
             spikes[mask,j] = 1
 
         return self._refractory(spikes)
@@ -179,8 +186,11 @@ def osc(times, a, f):
     return a + (a/2) * np.sin(times * f * 2 * np.pi)
 
 
-def stim(times, d, scale):
+def stim(times, d, scale, seed=None):
     """Naturalistic bias (via diffusion model)"""
+
+    if seed is not None:
+        np.random.seed(seed)
 
     rates = [d, ]
     for t in times[1:]:

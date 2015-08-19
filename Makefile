@@ -118,6 +118,7 @@ exp16:
 # ---
 # Exp 15 looked good....
 # So rerunning all major rate experiments at m = 20.  
+# Also changing f to 6 hz
 # TODO Redo synch too?
 rate_models_m20: exp17 exp18 exp19 exp20 exp21
 
