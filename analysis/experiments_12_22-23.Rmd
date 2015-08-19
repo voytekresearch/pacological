@@ -1,0 +1,269 @@
+---
+title: "Experiments 8, 12, 22, 23"
+author: "Erik J Peterson"
+date: "June 18, 2015"
+output:
+  html_document:
+    number_sections: yes
+    theme: spacelab
+    toc: yes
+---
+
+# Measure PAC all the ways....
+
+Load all the data....
+
+* Exp 8 (PLV): N = 250, PLV
+
+```{r exp8, echo=FALSE, warning=FALSE, message=FALSE}
+library(ggplot2)
+library(gridExtra)
+path <- "/home/ejp/src/pacological/data"
+exp8path <- paste(path, "/exp8/", sep="")
+
+rates <- c(2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30)
+
+mi_exp8 <- NULL
+h_exp8 <- NULL
+pac_exp8 <- NULL
+for(r_o in rates){
+  for(r_s in rates){
+    try({
+      name <- paste("Iosc-", as.character(r_o), "_Istim-", 
+                    as.character(r_s), "_k0_MI_summary.csv", sep="")
+      di <- read.csv(paste(exp8path, name, sep=""))
+      di["Iosc"] <- rep(r_o, nrow(di))
+      di["Istim"] <- rep(r_s, nrow(di))
+      mi_exp8 <- rbind(mi_exp8, di)  
+    }) 
+    
+    try({
+      name <- paste("Iosc-", as.character(r_o), "_Istim-", 
+                    as.character(r_s), "_k0_H_summary.csv", sep="")
+      di <- read.csv(paste(exp8path, name, sep=""))
+      di["Iosc"] <- rep(r_o, nrow(di))
+      di["Istim"] <- rep(r_s, nrow(di))
+      h_exp8 <- rbind(h_exp8, di)  
+    }) 
+    
+    try({
+      name <- paste("Iosc-", as.character(r_o), "_Istim-", 
+                    as.character(r_s), "_k0_PAC_summary.csv", sep="")
+      di <- read.csv(paste(exp8path, name, sep=""))
+      di["Iosc"] <- rep(r_o, nrow(di))
+      di["Istim"] <- rep(r_s, nrow(di))
+      pac_exp8 <- rbind(pac_exp8, di)  
+    }) 
+  }
+}
+```
+
+* Exp 12 (Tort MI), Tort MI
+
+```{r exp12, echo=FALSE, warning=FALSE, message=FALSE}
+library(ggplot2)
+library(gridExtra)
+path <- "/home/ejp/src/pacological/data"
+exp12path <- paste(path, "/exp12/", sep="")
+
+rates <- c(2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30)
+
+mi_exp12 <- NULL
+h_exp12 <- NULL
+pac_exp12 <- NULL
+for(r_o in rates){
+  for(r_s in rates){
+    try({
+      name <- paste("Iosc-", as.character(r_o), "_Istim-", 
+                    as.character(r_s), "_k0_MI_summary.csv", sep="")
+      di <- read.csv(paste(exp12path, name, sep=""))
+      di["Iosc"] <- rep(r_o, nrow(di))
+      di["Istim"] <- rep(r_s, nrow(di))
+      mi_exp12 <- rbind(mi_exp12, di)  
+    }) 
+    
+    try({
+      name <- paste("Iosc-", as.character(r_o), "_Istim-", 
+                    as.character(r_s), "_k0_H_summary.csv", sep="")
+      di <- read.csv(paste(exp12path, name, sep=""))
+      di["Iosc"] <- rep(r_o, nrow(di))
+      di["Istim"] <- rep(r_s, nrow(di))
+      h_exp12 <- rbind(h_exp12, di)  
+    }) 
+    
+    try({
+      name <- paste("Iosc-", as.character(r_o), "_Istim-", 
+                    as.character(r_s), "_k0_PAC_summary.csv", sep="")
+      di <- read.csv(paste(exp12path, name, sep=""))
+      di["Iosc"] <- rep(r_o, nrow(di))
+      di["Istim"] <- rep(r_s, nrow(di))
+      pac_exp12 <- rbind(pac_exp12, di)  
+    }) 
+  }
+}
+```
+
+
+* Exp 22, Was suppose to be GLM, but matrix inversion issues crashed the run.
+
+```{r exp22, eval=FALSE, echo=FALSE, warning=FALSE, message=FALSE}
+library(ggplot2)
+library(gridExtra)
+path <- "/home/ejp/src/pacological/data"
+exp22path <- paste(path, "/exp22/", sep="")
+
+rates <- c(2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30)
+
+mi_exp22 <- NULL
+h_exp22 <- NULL
+pac_exp22 <- NULL
+for(r_o in rates){
+  for(r_s in rates){
+    try({
+      name <- paste("Iosc-", as.character(r_o), "_Istim-", 
+                    as.character(r_s), "_k0_MI_summary.csv", sep="")
+      di <- read.csv(paste(exp22path, name, sep=""))
+      di["Iosc"] <- rep(r_o, nrow(di))
+      di["Istim"] <- rep(r_s, nrow(di))
+      mi_exp22 <- rbind(mi_exp22, di)  
+    }) 
+    
+    try({
+      name <- paste("Iosc-", as.character(r_o), "_Istim-", 
+                    as.character(r_s), "_k0_H_summary.csv", sep="")
+      di <- read.csv(paste(exp22path, name, sep=""))
+      di["Iosc"] <- rep(r_o, nrow(di))
+      di["Istim"] <- rep(r_s, nrow(di))
+      h_exp22 <- rbind(h_exp22, di)  
+    }) 
+    
+    try({
+      name <- paste("Iosc-", as.character(r_o), "_Istim-", 
+                    as.character(r_s), "_k0_PAC_summary.csv", sep="")
+      di <- read.csv(paste(exp22path, name, sep=""))
+      di["Iosc"] <- rep(r_o, nrow(di))
+      di["Istim"] <- rep(r_s, nrow(di))
+      pac_exp22 <- rbind(pac_exp22, di)  
+    }) 
+  }
+}
+```
+
+* Exp 23 (Canolty MI), Canolty MI
+
+```{r exp23, echo=FALSE, warning=FALSE, message=FALSE}
+library(ggplot2)
+library(gridExtra)
+path <- "/home/ejp/src/pacological/data"
+exp23path <- paste(path, "/exp23/", sep="")
+
+rates <- c(2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30)
+
+mi_exp23 <- NULL
+h_exp23 <- NULL
+pac_exp23 <- NULL
+for(r_o in rates){
+  for(r_s in rates){
+    try({
+      name <- paste("Iosc-", as.character(r_o), "_Istim-", 
+                    as.character(r_s), "_k0_MI_summary.csv", sep="")
+      di <- read.csv(paste(exp23path, name, sep=""))
+      di["Iosc"] <- rep(r_o, nrow(di))
+      di["Istim"] <- rep(r_s, nrow(di))
+      mi_exp23 <- rbind(mi_exp23, di)  
+    }) 
+    
+    try({
+      name <- paste("Iosc-", as.character(r_o), "_Istim-", 
+                    as.character(r_s), "_k0_H_summary.csv", sep="")
+      di <- read.csv(paste(exp23path, name, sep=""))
+      di["Iosc"] <- rep(r_o, nrow(di))
+      di["Istim"] <- rep(r_s, nrow(di))
+      h_exp23 <- rbind(h_exp23, di)  
+    }) 
+    
+    try({
+      name <- paste("Iosc-", as.character(r_o), "_Istim-", 
+                    as.character(r_s), "_k0_PAC_summary.csv", sep="")
+      di <- read.csv(paste(exp23path, name, sep=""))
+      di["Iosc"] <- rep(r_o, nrow(di))
+      di["Istim"] <- rep(r_s, nrow(di))
+      pac_exp23 <- rbind(pac_exp23, di)  
+    }) 
+  }
+}
+```
+
+
+## Gain
+
+```{r gain, echo=FALSE, fig.width=10, fig.height=4}
+p1 <- qplot(data=pac_exp8[pac_exp8$X %in% c("gain_p"),], x=Istim, group=Iosc, color=Iosc, y=mean, geom="line") + theme_bw() + xlim(1,30) + xlab("Istim") + ylab("PAC") + stat_summary(data=pac_exp8[pac_exp8$X %in% c("stim_p"),], aes(x=Istim, y=mean), geom="line", fun.y=mean, color="red") + ggtitle("Exp 8 (PLV)")
+
+p2 <- qplot(data=pac_exp12[pac_exp12$X %in% c("gain_p"),], x=Istim, group=Iosc, color=Iosc, y=mean, geom="line") + theme_bw() + xlim(1,30) + xlab("Istim") + ylab("PAC") + stat_summary(data=pac_exp12[pac_exp12$X %in% c("stim_p"),], aes(x=Istim, y=mean), geom="line", fun.y=mean, color="red") + ggtitle("Exp 12 (Tort MI)")
+
+# p3 <- qplot(data=pac_exp22[pac_exp22$X %in% c("gain_p"),], x=Istim, group=Iosc, color=Iosc, y=mean, geom="line") + theme_bw() + xlim(1,30) + xlab("") + ylab("PAC") + stat_summary(data=pac_exp22[pac_exp22$X %in% c("stim_p"),], aes(x=Istim, y=mean), geom="line", fun.y=mean, color="red") + ggtitle("Exp 22")
+
+p4 <- qplot(data=pac_exp23[pac_exp23$X %in% c("gain_p"),], x=Istim, group=Iosc, color=Iosc, y=mean, geom="line") + theme_bw() + xlim(1,30) + xlab("Istim") + ylab("PAC") + stat_summary(data=pac_exp23[pac_exp23$X %in% c("stim_p"),], aes(x=Istim, y=mean), geom="line", fun.y=mean, color="red") + ggtitle("Exp 23 (Canolty MI)")
+
+p1mi <- qplot(data=mi_exp8[mi_exp8$X %in% c("gain_p"),], x=Istim, group=Iosc, color=Iosc, y=mean, geom="line") + theme_bw() + xlim(1,30) + xlab("Istim") + ylab("MI") + stat_summary(data=mi_exp8[mi_exp8$X %in% c("stim_p"),], aes(x=Istim, y=mean), geom="line", fun.y=mean, color="red") 
+
+p2mi <- qplot(data=mi_exp12[mi_exp12$X %in% c("gain_p"),], x=Istim, group=Iosc, color=Iosc, y=mean, geom="line") + theme_bw() + xlim(1,30) + xlab("Istim") + ylab("MI") + stat_summary(data=mi_exp12[mi_exp12$X %in% c("stim_p"),], aes(x=Istim, y=mean), geom="line", fun.y=mean, color="red") 
+
+# p3 <- qplot(data=mi_exp22[mi_exp22$X %in% c("gain_p"),], x=Istim, group=Iosc, color=Iosc, y=mean, geom="line") + theme_bw() + xlim(1,30) + xlab("") + ylab("MI") + stat_summary(data=mi_exp22[mi_exp22$X %in% c("stim_p"),], aes(x=Istim, y=mean), geom="line", fun.y=mean, color="red") + ggtitle("Exp 22")
+
+p4mi <- qplot(data=mi_exp23[mi_exp23$X %in% c("gain_p"),], x=Istim, group=Iosc, color=Iosc, y=mean, geom="line") + theme_bw() + xlim(1,30) + xlab("Istim") + ylab("MI") + stat_summary(data=mi_exp23[mi_exp23$X %in% c("stim_p"),], aes(x=Istim, y=mean), geom="line", fun.y=mean, color="red") 
+
+grid.arrange(p1, p2, p4, p1mi, p2mi, p4mi, nrow=2)
+```
+
+
+## Addition 
+
+```{r add, echo=FALSE, fig.width=10, fig.height=4}
+p1 <- qplot(data=pac_exp8[pac_exp8$X %in% c("summed_p"),], x=Istim, group=Iosc, color=Iosc, y=mean, geom="line") + theme_bw() + xlim(1,30) + xlab("Istim") + ylab("PAC") + stat_summary(data=pac_exp8[pac_exp8$X %in% c("stim_p"),], aes(x=Istim, y=mean), geom="line", fun.y=mean, color="red") + ggtitle("Exp 8 (PLV)")
+
+p2 <- qplot(data=pac_exp12[pac_exp12$X %in% c("summed_p"),], x=Istim, group=Iosc, color=Iosc, y=mean, geom="line") + theme_bw() + xlim(1,30) + xlab("Istim") + ylab("PAC") + stat_summary(data=pac_exp12[pac_exp12$X %in% c("stim_p"),], aes(x=Istim, y=mean), geom="line", fun.y=mean, color="red") + ggtitle("Exp 12 (Tort MI)")
+
+# p3 <- qplot(data=pac_exp22[pac_exp22$X %in% c("summed_p"),], x=Istim, group=Iosc, color=Iosc, y=mean, geom="line") + theme_bw() + xlim(1,30) + xlab("") + ylab("PAC") + stat_summary(data=pac_exp22[pac_exp22$X %in% c("stim_p"),], aes(x=Istim, y=mean), geom="line", fun.y=mean, color="red") + ggtitle("Exp 22")
+
+p4 <- qplot(data=pac_exp23[pac_exp23$X %in% c("summed_p"),], x=Istim, group=Iosc, color=Iosc, y=mean, geom="line") + theme_bw() + xlim(1,30) + xlab("Istim") + ylab("PAC") + stat_summary(data=pac_exp23[pac_exp23$X %in% c("stim_p"),], aes(x=Istim, y=mean), geom="line", fun.y=mean, color="red") + ggtitle("Exp 23 (Canolty MI)")
+
+p1mi <- qplot(data=mi_exp8[mi_exp8$X %in% c("summed_p"),], x=Istim, group=Iosc, color=Iosc, y=mean, geom="line") + theme_bw() + xlim(1,30) + xlab("Istim") + ylab("MI") + stat_summary(data=mi_exp8[mi_exp8$X %in% c("stim_p"),], aes(x=Istim, y=mean), geom="line", fun.y=mean, color="red") 
+
+p2mi <- qplot(data=mi_exp12[mi_exp12$X %in% c("summed_p"),], x=Istim, group=Iosc, color=Iosc, y=mean, geom="line") + theme_bw() + xlim(1,30) + xlab("Istim") + ylab("MI") + stat_summary(data=mi_exp12[mi_exp12$X %in% c("stim_p"),], aes(x=Istim, y=mean), geom="line", fun.y=mean, color="red") 
+
+# p3 <- qplot(data=mi_exp22[mi_exp22$X %in% c("summed_p"),], x=Istim, group=Iosc, color=Iosc, y=mean, geom="line") + theme_bw() + xlim(1,30) + xlab("") + ylab("MI") + stat_summary(data=mi_exp22[mi_exp22$X %in% c("stim_p"),], aes(x=Istim, y=mean), geom="line", fun.y=mean, color="red") + ggtitle("Exp 22")
+
+p4mi <- qplot(data=mi_exp23[mi_exp23$X %in% c("summed_p"),], x=Istim, group=Iosc, color=Iosc, y=mean, geom="line") + theme_bw() + xlim(1,30) + xlab("Istim") + ylab("MI") + stat_summary(data=mi_exp23[mi_exp23$X %in% c("stim_p"),], aes(x=Istim, y=mean), geom="line", fun.y=mean, color="red") 
+
+grid.arrange(p1, p2, p4, p1mi, p2mi, p4mi, nrow=2)
+```
+
+## Subtraction
+
+```{r sub, echo=FALSE, fig.width=10, fig.height=4}
+p1 <- qplot(data=pac_exp8[pac_exp8$X %in% c("silenced_p"),], x=Istim, group=Iosc, color=Iosc, y=mean, geom="line") + theme_bw() + xlim(1,30) + xlab("Istim") + ylab("PAC") + stat_summary(data=pac_exp8[pac_exp8$X %in% c("stim_p"),], aes(x=Istim, y=mean), geom="line", fun.y=mean, color="red") + ggtitle("Exp 8 (PLV)")
+
+p2 <- qplot(data=pac_exp12[pac_exp12$X %in% c("silenced_p"),], x=Istim, group=Iosc, color=Iosc, y=mean, geom="line") + theme_bw() + xlim(1,30) + xlab("Istim") + ylab("PAC") + stat_summary(data=pac_exp12[pac_exp12$X %in% c("stim_p"),], aes(x=Istim, y=mean), geom="line", fun.y=mean, color="red") + ggtitle("Exp 12 (Tort MI)")
+
+# p3 <- qplot(data=pac_exp22[pac_exp22$X %in% c("silenced_p"),], x=Istim, group=Iosc, color=Iosc, y=mean, geom="line") + theme_bw() + xlim(1,30) + xlab("") + ylab("PAC") + stat_summary(data=pac_exp22[pac_exp22$X %in% c("stim_p"),], aes(x=Istim, y=mean), geom="line", fun.y=mean, color="red") + ggtitle("Exp 22")
+
+p4 <- qplot(data=pac_exp23[pac_exp23$X %in% c("silenced_p"),], x=Istim, group=Iosc, color=Iosc, y=mean, geom="line") + theme_bw() + xlim(1,30) + xlab("Istim") + ylab("PAC") + stat_summary(data=pac_exp23[pac_exp23$X %in% c("stim_p"),], aes(x=Istim, y=mean), geom="line", fun.y=mean, color="red") + ggtitle("Exp 23 (Canolty MI)")
+
+p1mi <- qplot(data=mi_exp8[mi_exp8$X %in% c("silenced_p"),], x=Istim, group=Iosc, color=Iosc, y=mean, geom="line") + theme_bw() + xlim(1,30) + xlab("Istim") + ylab("MI") + stat_summary(data=mi_exp8[mi_exp8$X %in% c("stim_p"),], aes(x=Istim, y=mean), geom="line", fun.y=mean, color="red") 
+
+p2mi <- qplot(data=mi_exp12[mi_exp12$X %in% c("silenced_p"),], x=Istim, group=Iosc, color=Iosc, y=mean, geom="line") + theme_bw() + xlim(1,30) + xlab("Istim") + ylab("MI") + stat_summary(data=mi_exp12[mi_exp12$X %in% c("stim_p"),], aes(x=Istim, y=mean), geom="line", fun.y=mean, color="red") 
+
+# p3 <- qplot(data=mi_exp22[mi_exp22$X %in% c("silenced_p"),], x=Istim, group=Iosc, color=Iosc, y=mean, geom="line") + theme_bw() + xlim(1,30) + xlab("") + ylab("MI") + stat_summary(data=mi_exp22[mi_exp22$X %in% c("stim_p"),], aes(x=Istim, y=mean), geom="line", fun.y=mean, color="red") + ggtitle("Exp 22")
+
+p4mi <- qplot(data=mi_exp23[mi_exp23$X %in% c("silenced_p"),], x=Istim, group=Iosc, color=Iosc, y=mean, geom="line") + theme_bw() + xlim(1,30) + xlab("Istim") + ylab("MI") + stat_summary(data=mi_exp23[mi_exp23$X %in% c("stim_p"),], aes(x=Istim, y=mean), geom="line", fun.y=mean, color="red") 
+
+grid.arrange(p1, p2, p4, p1mi, p2mi, p4mi, nrow=2)
+```
+
+# Conclusions
+
+* All models here _have_ PAC. I made em that way. But how you measure PAC has a huge impact the reported strength.
+* Above very disturbing. Thought the metrics were suppose to be similar....
+I'm really not sure what the right answer is. Read. Talk to SC.

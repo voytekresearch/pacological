@@ -1,0 +1,135 @@
+---
+title: "Looking at PAC across neural transforms"
+author: "Erik J Peterson"
+date: "8/14/2015"
+output: html_document
+---
+
+```{r helper_fns, echo=FALSE}
+library(ggplot)
+library(psd)
+library(gridExtra)
+
+load.data <- function(path, type, rates, ks){
+  dexp <- NULL
+  for(r_o in rates){
+    for(r_s in rates){
+      for(k in ks){
+        try({
+          name <- paste("Iosc-", as.character(r_o), 
+                      "_Istim-", as.character(r_s), 
+                      "_k", as.character(k), 
+                      "_", as.character(type), 
+                      ".csv", sep="")
+          di <- read.csv(paste(path, name, sep=""))
+          di["Iosc"] <- rep(r_o, nrow(di))
+          di["Istim"] <- rep(r_s, nrow(di))
+          di["k"] <- rep(k, nrow(di))
+          
+          dexp <- rbind(dexp, di)  
+       })
+      }
+    }
+  }
+dexp
+}
+```
+
+```{r}
+path <- "/home/ejp/src/pacological/data"
+rates <- c(2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30)
+ks <- c(0)
+
+demopath <- paste(path, "/demo_pac/", sep="")
+pacdist <- load.data(demopath, "PACdist", rates, ks)
+
+qplot(data=pacdist, x=X, y=gain_p, facets=Iosc~Istim, geom="line") + theme_bw() 
+```
+
+``` {r}
+path <- "/home/ejp/src/pacological/data"
+rates <- c(2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30)
+ks <- c(0)
+
+demopath <- paste(path, "/demo_pac/", sep="")
+lfps <- load.data(demopath, "lfps", rates, ks)
+
+qplot(data=lfps[lfps$X < 1000,], x=X, y=silenced_p, facets=Iosc~Istim, geom="line") + theme_bw() 
+```
+
+Plot some example timecourse and PSDSs.
+
+```{r three_pacs}
+sum_ex <- subset(lfps, (Iosc == 30) & (Istim == 20))
+p1 <- qplot(data=sum_ex[sum_ex < 1000,], x=X, y=summed_p, geom="line") + theme_bw() + ylab("Additive PAC") + xlab("")
+
+gain_ex <- subset(lfps, (Iosc == 30) & (Istim == 10))
+p2 <- qplot(data=gain_ex[gain_ex < 1000,], x=X, y=gain_p, geom="line") + theme_bw() + ylab("Gain PAC") + xlab("")
+
+silenced_ex <- subset(lfps, (Iosc == 20) & (Istim == 30))
+p3 <- qplot(data=silenced_ex[silenced_ex < 1000,], x=X, y=silenced_p, geom="line") + theme_bw() + ylab("Subtractive PAC") + xlab("Time (ms)")
+
+grid.arrange(p1, p2, p3, nrow=3)
+
+sum_psd <- pspectrum(sum_ex$summed_p, x.frqsamp=1000)
+gain_psd <- pspectrum(gain_ex$gain_p, x.frqsamp=1000)
+sil_psd <- pspectrum(silenced_ex$silenced_p, x.frqsamp=1000)
+psds <- as.data.frame(
+  rbind(
+    cbind(sum_psd$freq, sum_psd$spec, rep("additive", length(sum_psd$freq))),
+    cbind(gain_psd$freq, gain_psd$spec, rep("gain", length(gain_psd$freq))),
+    cbind(sil_psd$freq, sil_psd$spec, rep("subtractive", length(sil_psd$freq)))
+  ), stringsAsFactors=FALSE
+)
+colnames(psds) <- c("freq", "spec", "model")
+psds$model <- factor(psds$model)
+psds$freq <- as.numeric(psds$freq)
+psds$spec <- as.numeric(psds$spec)
+
+qplot(data=subset(psds, freq < 300), x=freq, y=spec, color=model, geom="line") + scale_y_log10() + scale_x_log10() + theme_bw() + ylab("PSD") + xlab("F (Hz)")
+```
+
+The PSD differences were intrguiing. How does PSD scale with drive?
+
+```{r}
+rates <- c(2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30)
+models <- c("gain_p", "summed_p", "silenced_p")
+psds <- NULL
+for(r_o in rates){
+  for(r_s in rates){
+    df <- subset(lfps, (Iosc == r_o) & (Istim == r_s))
+    for(model in models){
+      spec <- pspectrum(df[[model]], x.frqsamp=1000)
+      psds <- rbind(
+        psds,
+        cbind(
+          spec$freq, 
+          spec$spec, 
+          rep(model, length(spec$freq)), 
+          rep(r_s, length(spec$freq)), 
+          rep(r_o, length(spec$freq))
+        )
+      )
+    }
+  }
+}
+dfpsds <- as.data.frame(psds, stringsAsFactors = FALSE)
+colnames(dfpsds) <- c("freq", "spec", "model", "Istim", "Iosc")
+
+dfpsds$freq <- as.numeric(dfpsds$freq)
+dfpsds$spec <- as.numeric(dfpsds$spec)
+dfpsds$Istim <- factor(dfpsds$Istim, levels=rates)
+dfpsds$Iosc <- factor(dfpsds$Iosc, levels=rates)
+
+p1 <- qplot(data=subset(dfpsds, (freq < 300) & (Iosc == "2")), x=freq, y=spec, color=Istim, facets=model~., geom="line", labeller=label_both) + scale_y_log10() + scale_x_log10() + theme_bw() + ylab("PSD") + xlab("F (Hz)") +  scale_colour_hue(h=c(270, 220)) + ggtitle("Weak Iosc (2 Hz)")
+
+p2 <- qplot(data=subset(dfpsds, (freq < 300) & (Iosc == "20")), x=freq, y=spec, color=Istim, facets=model~., geom="line", labeller=label_both) + scale_y_log10() + scale_x_log10() + theme_bw() + ylab("PSD") + xlab("F (Hz)") +  scale_colour_hue(h=c(270, 220)) + ggtitle("Strong Iosc (20 Hz)")
+
+p3 <- qplot(data=subset(dfpsds, (freq < 300) & (Istim == "2")), x=freq, y=spec, color=Iosc, facets=model~., geom="line", labeller=label_both) + scale_y_log10() + scale_x_log10() + theme_bw() + ylab("PSD") + xlab("F (Hz)") +  scale_colour_hue(h=c(270, 220)) + ggtitle("Weak Istim (2 Hz)")
+
+p4 <- qplot(data=subset(dfpsds, (freq < 300) & (Istim == "20")), x=freq, y=spec, color=Iosc, facets=model~., geom="line", labeller=label_both) + scale_y_log10() + scale_x_log10() + theme_bw() + ylab("PSD") + xlab("F (Hz)") +  scale_colour_hue(h=c(270, 220)) + ggtitle("Strong Istim (20 Hz)")
+
+grid.arrange(p3, p4, p1, p2, nrow=2)
+```
+
+Again, pretty interesting. No real conclusions right now, though.

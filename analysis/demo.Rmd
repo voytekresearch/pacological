@@ -1,0 +1,89 @@
+---
+title: "Demo figures"
+author: "ejp"
+date: "June 17, 2015"
+output: html_document
+---
+
+```{r}
+library(ggplot2)
+library(dplyr)
+
+bias <- read.csv("../data/demo/bias.csv")
+qplot(data=bias, x=times, y=osc, geom="line") + theme_minimal() + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.line = element_line(colour = "black"))
+ggsave("osc.pdf", width = 3, height = 2)
+
+qplot(data=bias, x=times, y=stim, geom="line") + theme_minimal() + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.line = element_line(colour = "black"))
+ggsave("stim.pdf", width = 3, height = 2)
+
+qplot(data=bias, x=times, y=gain, geom="line") + theme_minimal() + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.line = element_line(colour = "black"))
+ggsave("gain.pdf", width = 3, height = 2)
+
+qplot(data=bias, x=times, y=silenced, geom="line") + theme_minimal() + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.line = element_line(colour = "black"))
+ggsave("silenced.pdf", width = 3, height = 2)
+
+qplot(data=bias, x=times, y=summed, geom="line") + theme_minimal() + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.line = element_line(colour = "black"))
+ggsave("summed.pdf", width = 3, height = 2)
+```
+
+```{r}
+setwd("~/src/pacological")
+rate <- read.csv("data/demo/spikes_stim_est_p.csv")
+bin <- read.csv("data/demo/spikes_stim_est_b.csv")
+osc <- read.csv("data/demo/spikes_osc_p.csv")
+gain <- read.csv("data/demo/spikes_gain_p.csv")
+summed <- read.csv("data/demo/spikes_summed_p.csv")
+silenced <- read.csv("data/demo/spikes_silenced_p.csv")
+sync <- read.csv("data/demo/spikes_gain_bp.csv")
+
+rate <- subset(rate, neuron < 100)
+bin <- subset(bin, neuron < 100)
+osc <- subset(osc, neuron < 100)
+gain <- subset(gain, neuron < 100)
+summed <- subset(summed, neuron < 100)
+silenced <- subset(silenced, neuron < 100)
+sync <- subset(sync, neuron < 100)
+
+qplot(data=rate, x=time, y=neuron) + theme_minimal() + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.line = element_line(colour = "black"))
+ggsave("/home/ejp/src/pacological/data/demo/rate.pdf", width=6, height = 4)
+
+qplot(data=bin, x=time, y=neuron) + theme_minimal() + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.line = element_line(colour = "black"))
+ggsave("/home/ejp/src/pacological/data/demo/binary.pdf", width=6, height = 4)
+
+qplot(data=osc, x=time, y=neuron) + theme_minimal() + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.line = element_line(colour = "black"))
+ggsave("/home/ejp/src/pacological/data/demo/osc.pdf", width=6, height = 4)
+
+qplot(data=gain, x=time, y=neuron) + theme_minimal() + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.line = element_line(colour = "black"))
+ggsave("/home/ejp/src/pacological/data/demo/gain.pdf", width=6, height = 4)
+
+qplot(data=summed, x=time, y=neuron) + theme_minimal() + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.line = element_line(colour = "black"))
+ggsave("/home/ejp/src/pacological/data/demo/summed.pdf", width=6, height = 4)
+
+qplot(data=silenced, x=time, y=neuron) + theme_minimal() + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.line = element_line(colour = "black"))
+ggsave("/home/ejp/src/pacological/data/demo/silenced.pdf", width=6, height = 4)
+
+qplot(data=sync, x=time, y=neuron) + theme_minimal() + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.line = element_line(colour = "black"))
+ggsave("/home/ejp/src/pacological/data/demo/sync.pdf", width=6, height = 4)
+```
+
+```{r}
+lfps <- sync <- read.csv("/home/ejp/src/pacological/data/demo/lfps.csv")
+
+qplot(data=lfps, x=times, y=stim_est_p, geom="line") + theme_bw()
+ggsave("/home/ejp/src/pacological/data/demo/rate_lfp.pdf", width=6, height = 4)
+
+qplot(data=lfps, x=times, y=gain_p, geom="line") + theme_bw()
+ggsave("/home/ejp/src/pacological/data/demo/gain_lfp.pdf", width=6, height = 4)
+
+qplot(data=lfps, x=times, y=osc_p, geom="line") + theme_bw()
+ggsave("/home/ejp/src/pacological/data/demo/osc_lfp.pdf", width=6, height = 4)
+
+qplot(data=lfps, x=times, y=summed_p, geom="line") + theme_bw()
+ggsave("/home/ejp/src/pacological/data/demo/summed_lfp.pdf", width=6, height = 4)
+
+qplot(data=lfps, x=times, y=silenced_p, geom="line") + theme_bw()
+ggsave("/home/ejp/src/pacological/data/demo/silenced_lfp.pdf", width=6, height = 4)
+
+qplot(data=lfps, x=times, y=gain_bp, geom="line") + theme_bw()
+ggsave("/home/ejp/src/pacological/data/demo/sync_lfp.pdf", width=6, height = 4)
+```

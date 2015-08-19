@@ -9,7 +9,8 @@ from copy import deepcopy
 # Want MI = H_Net - H_drive
 # Gain should have two forms - rate and synch
 class Spikes(object):
-    def __init__(self, n, t, dt=0.001, refractory=0.002, seed=None):
+    def __init__(self, n, t, dt=0.001, refractory=0.002, seed=None,
+                 private_stdev=0):
 
         self.seed = seed
         np.random.seed(self.seed)
@@ -30,6 +31,11 @@ class Spikes(object):
         self.t = t
         self.n_steps = int(self.t * (1.0 / self.dt))
         self.times = np.linspace(0, self.t, self.n_steps)
+        self.private_stdev = private_stdev
+
+        if refractory % self.dt != 0:
+            raise ValueError("refractory must be a integer multiple of dt")
+        self.refractory = refractory
 
         # Create uniform sampling distributions for each neuron
         self.unifs = np.vstack(
@@ -41,77 +47,66 @@ class Spikes(object):
             raise ValueError("Shape of `drive` and `oscillation' must match")
         if drive.ndim != 1:
             raise ValueError("`drive` and `oscillation` must be 1d")
+
         if np.all(drive < 0):
             raise ValueError("`drive` must be greater than 0")
         if np.all(oscillation < 0):
             raise ValueError("`oscillation` must be greater than 0")
 
-    def poisson(self, rates):
-        self._constraints(rates, rates)  # does no harm to check twice
-
-        # Method taken from
-        # http://www.cns.nyu.edu/~david/handouts/poisson.pdf
-        spikes = np.zeros_like(self.unifs, np.int)
-        for j in xrange(self.n):
-            # mask = self.unifs[:,j] <= (rates * self.dt)
-            mask = self.unifs[:,j] <= (rates * self.dt)
-            spikes[mask, j] = 1
-
-        return self._refractory(spikes)
-
-    def _bias_to_prob(self, bias, max_rate):
-        # ps = bias / float(max_rate)
-        ps = bias * 0.001
-        ps[ps > 1] = 1  # clip
-
-        return ps
-
     def _refractory(self, spks):
-        # lw = int(self.refractory / self.dt)  # len of refractory window
-        #
-        # # If it spiked at t, delete spikes over all t_plus
-        # # in the refractory window
-        # for t in xrange(spks.shape[0]):
-        #     mask = spks[t, :]
-        #     for t_plus in xrange(lw):
-        #         spks[t_plus, :][mask] = 0
+        lw = int(self.refractory / self.dt)  # len of refractory window
+
+        # If it spiked at t, delete spikes
+        # in the refractory window
+        for t in xrange(spks.shape[0]):
+            mask = spks[t, :]
+            for t_plus in xrange(lw):
+                spks[t_plus, :][mask] = 0
 
         return spks
 
-    def binomial(self, rates, max_rate=500):
+    def poisson(self, rates):
         self._constraints(rates, rates)  # does no harm to check twice
-        ps = self._bias_to_prob(rates, max_rate)
 
-        # Method taken from
-        # hrens, J.H. & Dieter, U., 1974. Computer methods for sampling
-        # from gamma, beta, poisson and bionomial distributions. Computing,
-        # 12(3), pp.223–246.
+        # No bias unless private_stdev is specified
+        biases = np.zeros(self.n)
+        if self.private_stdev > 0:
+            biases = np.random.normal(0, self.private_stdev, size=self.n)
+
+        # Poisson method taken from
+        # http://www.cns.nyu.edu/~david/handouts/poisson.pdf
         spikes = np.zeros_like(self.unifs, np.int)
         for j in xrange(self.n):
-            mask = self.unifs[:,j] < ps
-            spikes[mask, j] = 1
+            mask = self.unifs[:,j] <= ((rates + biases[j]) * self.dt)
+            spikes[mask,j] = 1
 
         return self._refractory(spikes)
 
-    def multiply(self, drive, oscillation):
-        self._constraints(drive, oscillation)
-        rates = drive * oscillation
+    def bernoulli(self, rates, excitability=0.1):
+        self._constraints(rates, rates)
 
-        return self.poisson(rates)
+        ps = rates * excitability
+        js = np.arange(self.n, dtype=int)
 
-    def add(self, drive, oscillation):
-        self._constraints(drive, oscillation)
-        rates = drive + oscillation
+        spikes = np.zeros_like(self.unifs, np.int)
+        for i in xrange(self.n_steps):
+            # Grab a random j and lookup its u at i
+            # if u <= p add spike to j,
+            # and draw j again.
+            #
+            # Repeat until we're out of j
+            # or u > p
+            np.random.shuffle(js)
+            for j in js:
+                if self.unifs[i, j] <= ps[i]:
+                    spikes[i, j] = 1
+                else:
+                    break
 
-        return self.poisson(rates)
+        return self._refractory(spikes)
 
-    def subtract(self, drive, oscillation):
-        self._constraints(drive, oscillation)
-        rates = drive - oscillation
-
-        return self.poisson(rates)
-
-    def poisson_binomial(self, drive, oscillation, amplitude=False, max_rate=500):
+    def poisson_bernoulli(self, drive, oscillation, excitability=0.1,
+                       amplitude=False):
         self._constraints(drive, oscillation)
 
         # Renorm
@@ -122,47 +117,72 @@ class Spikes(object):
 
         # the oscillation increases Binomial firing
         if amplitude:
-            spks_b = self.poisson(oscillation + (drive * normed))
+            spks_b = self.bernoulli(
+                oscillation + (drive * normed), excitability
+            )
         else:
-            spks_b = self.binomial(drive * normed, max_rate)
-
-        # Justification:
-        # 'Partitioning neural variability'
-        # 'Gamma oscillations of spiking neural populations
-        # enhance signal discrimination.'
-        # 'Binary Spiking in Auditory Cortex'
+            spks_b = self.bernoulli(drive * normed, excitability)
 
         spks = spks_p + spks_b
         spks[spks > 1] = 1  # Clip double spikes
 
         return self._refractory(spks)
 
-    def shift(self, drive, oscillation, tau=0.001):
-        """Use `oscillation` to shift spike times"""
+    def binary(self, rates, k=3, excitability=0.001):
+        # Justification:
+        # 'Partitioning neural variability'
+        # 'Gamma oscillations of spiking neural populations
+        # enhance signal discrimination.'
+        # 'Binary Spiking in Auditory Cortex'
+        self._constraints(rates, rates)  # does no harm to check twice
 
-        # self._constraints(drive, oscillation)
-        #
-        # if (tau % self.dt) != 0:
-        #     raise ValueError("`tau` must be an integer multiple of {0}".format(
-        #         self.dt))
-        #
-        # step = int(tau / self.dt)
-        # m = np.mean(oscillation)
-        #
-        # spks = self.poisson(drive)
-        #
-        # # TODO How to relate magnitude of oscillation to shift?
-        # for j in range(self.n):
-        #     for i in range(step, (self.t - step + 1)):
-        #         s = spks[i, j]
-        #         if spks[i, j] == 1:
-        #             if oscillation[i] < m:
-        #                 spks[i, j] = 0
-        #                 spks[i + step, j] = 1
-        #             elif oscillation[i] > m:
-        #                 spks[i, j] = 0
-        #                 spks[i - step, j] = 1
-        pass
+        ps = rates * excitability
+        ns = np.arange(self.n)
+        np.random.shuffle(ns)
+
+        spikes = np.zeros_like(self.unifs, np.int)
+        for i in xrange(self.n_steps):
+            for j in xrange(self.n):
+                # If bernoilli success, neuron_i_j spikes
+                # as does some of it's randomly selected
+                # neighbors.
+                if self.unifs[i, j] < ps[i]:
+                    spikes[i, j] = 1
+
+                    no_j = ns[ns != j]
+                    np.random.shuffle(no_j)
+                    for jn in no_j[0:k]:
+                        spikes[i, jn] = 1
+
+        return self._refractory(spikes)
+
+    def poisson_binary(self, drive, oscillation, k=3, excitability=0.001,
+                       amplitude=False):
+        self._constraints(drive, oscillation)
+
+        # Renorm
+        normed = oscillation / float(oscillation.max())
+
+        # Drive is baseline poisson but...
+        spks_p = self.poisson(drive * (1 - normed))
+
+        # the oscillation increases Binomial firing
+        if amplitude:
+            spks_b = self.binary(
+                oscillation + (drive * normed), k, excitability
+            )
+        else:
+            spks_b = self.binary(drive * normed, k, excitability)
+
+        # Justification:
+        # 'Partitioning neural variability'
+        # 'Gamma oscillations of spiking neural populations
+        # enhance signal discrimination.'
+        # 'Binary Spiking in Auditory Cortex'
+        spks = spks_p + spks_b
+        spks[spks > 1] = 1  # Clip double spikes
+
+        return self._refractory(spks)
 
 
 def osc(times, a, f):
@@ -171,8 +191,11 @@ def osc(times, a, f):
     return a + (a / 2.0) * np.sin(times * f * 2 * np.pi)
 
 
-def stim(times, d, scale):
+def stim(times, d, scale, seed=None):
     """Naturalistic bias (via diffusion model)"""
+
+    if seed is not None:
+        np.random.seed(seed)
 
     rates = [d, ]
     for t in times[1:]:

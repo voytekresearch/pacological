@@ -1,0 +1,294 @@
+---
+title: "Results"
+author: "ejp"
+date: "June 23, 2015"
+output: html_document
+---
+
+```{r exp1, echo=FALSE, warning=FALSE, message=FALSE}
+library(ggplot2)
+library(gridExtra)
+
+path <- "/home/ejp/src/pacological/data"
+exp1path <- paste(path, "/exp1/", sep="")
+
+# rates <- c(2, 6, 10, 14, 18, 22, 26, 30, 34, 38, 42, 46, 50, 54, 58)
+rates <- c(2, 6, 10, 14, 18, 22, 26, 30)
+mi_exp1 <- NULL
+for(r_o in rates){
+  for(r_s in rates){
+    try({
+      name <- paste("Iosc-", as.character(r_o), "_Istim-", 
+                    as.character(r_s), "_MI_summary.csv", sep="")
+      di <- read.csv(paste(exp1path, name, sep=""))
+      di["Modulation"] <- rep(r_o, nrow(di))
+      di["Drive"] <- rep(r_s, nrow(di))
+      mi_exp1 <- rbind(mi_exp1, di)  
+    }) 
+  }
+}
+
+h_exp1 <- NULL
+for(r_o in rates){
+  for(r_s in rates){
+    try({
+      name <- paste("Iosc-", as.character(r_o), "_Istim-", 
+                    as.character(r_s), "_H_summary.csv", sep="")
+      di <- read.csv(paste(exp1path, name, sep=""))
+      di["Modulation"] <- rep(r_o, nrow(di))
+      di["Drive"] <- rep(r_s, nrow(di))
+      h_exp1 <- rbind(h_exp1, di)  
+    }) 
+  }
+}
+
+pac_exp1 <- NULL
+for(r_o in rates){
+  for(r_s in rates){
+    try({
+      name <- paste("Iosc-", as.character(r_o), "_Istim-", 
+                    as.character(r_s), "_PAC_summary.csv", sep="")
+      di <- read.csv(paste(exp1path, name, sep=""))
+      di["Modulation"] <- rep(r_o, nrow(di))
+      di["Drive"] <- rep(r_s, nrow(di))
+      pac_exp1 <- rbind(pac_exp1, di)  
+    }) 
+  }
+}
+```
+
+```{r exp5, echo=FALSE, warning=FALSE, message=FALSE}
+exp5path <- paste(path, "/exp5/", sep="")
+
+rates = c(5, 10, 15, 20, 25, 30)
+excites = c("0.2", "0.1", "0.05")
+
+mi_exp5 <- NULL
+for(r_o in rates){
+  for(r_s in rates){
+    for(ex in excites){
+      try({
+        name <- paste("Iosc-", as.character(r_o), "_Istim-", 
+                      as.character(r_s), "_ex-", ex, "_MI_summary.csv", sep="")
+        di <- read.csv(paste(exp5path, name, sep=""))
+        di["Modulation"] <- rep(r_o, nrow(di))
+        di["Drive"] <- rep(r_s, nrow(di))
+        di["excitability"] <- rep(ex, nrow(di))
+        mi_exp5 <- rbind(mi_exp5, di)  
+        })   
+    }
+  }
+}
+mi_exp5 <- subset(mi_exp5, excitability == "0.1")
+
+h_exp5 <- NULL
+for(r_o in rates){
+  for(r_s in rates){
+    for(ex in excites){
+      try({
+        name <- paste("Iosc-", as.character(r_o), "_Istim-", 
+                      as.character(r_s), "_ex-", ex, "_H_summary.csv", sep="")
+        di <- read.csv(paste(exp5path, name, sep=""))
+        di["Modulation"] <- rep(r_o, nrow(di))
+        di["Drive"] <- rep(r_s, nrow(di))
+        di["excitability"] <- rep(ex, nrow(di))
+        h_exp5 <- rbind(h_exp5, di)  
+        })   
+    }
+  }
+}
+h_exp5 <- subset(h_exp5, excitability == "0.1")
+
+pac_exp5 <- NULL
+for(r_o in rates){
+  for(r_s in rates){
+    for(ex in excites){
+      try({
+        name <- paste("Iosc-", as.character(r_o), "_Istim-", 
+                      as.character(r_s), "_ex-", ex, "_PAC_summary.csv", sep="")
+        di <- read.csv(paste(exp5path, name, sep=""))
+        di["Modulation"] <- rep(r_o, nrow(di))
+        di["Drive"] <- rep(r_s, nrow(di))
+        di["excitability"] <- rep(ex, nrow(di))
+        pac_exp5 <- rbind(pac_exp5, di)  
+        })   
+    }
+  }
+}
+pac_exp5 <- subset(pac_exp5, excitability == "0.1")
+
+rate_exp5 <- NULL
+for(r_o in rates){
+  for(r_s in rates){
+    for(ex in excites){
+      try({
+        name <- paste("Iosc-", as.character(r_o), "_Istim-", 
+                      as.character(r_s), "_ex-", ex, "_rate_summary.csv", sep="")
+        di <- read.csv(paste(exp5path, name, sep=""))
+        di["Modulation"] <- rep(r_o, nrow(di))
+        di["Drive"] <- rep(r_s, nrow(di))
+        di["excitability"] <- rep(ex, nrow(di))
+        rate_exp5 <- rbind(rate_exp5, di)  
+        })   
+    }
+  }
+}
+rate_exp5 <- subset(rate_exp5, excitability == "0.1")
+```
+
+
+```{r plot_mult, echo=FALSE, fig.width=6, fig.height=3}
+p1 <- qplot(data=mi_exp1[mi_exp1$X %in% c("gain_p"),], 
+            x=Drive, group=Modulation, color=Modulation, y=mean, geom="line") + 
+  theme_bw() + 
+  xlim(1,30) + 
+  ylim(0,.2) +
+  xlab("") + 
+  ylab("MI") + 
+  stat_summary(data=mi_exp1[mi_exp1$X %in% c("stim_p"),], 
+               aes(x=Drive, y=mean), geom="line", fun.y=mean, color="red") + 
+  ggtitle("*")
+
+p2 <- qplot(data=pac_exp1[pac_exp1$X %in% c("gain_p"),], 
+            x=Drive, group=Modulation, color=Modulation, y=mean, geom="line") + 
+  theme_bw() + 
+  xlim(1,30) + 
+  ylim(0,1) +
+  xlab("") + 
+  ylab("PAC") + 
+  stat_summary(data=pac_exp1[pac_exp1$X %in% c("stim_p"),], 
+               aes(x=Drive, y=mean), geom="line", fun.y=mean, color="red") + 
+  ggtitle("")
+
+p3 <- qplot(data=h_exp1[h_exp1$X %in% c("gain_p"),], 
+            x=Drive, group=Modulation, color=Modulation, y=mean, geom="line") + 
+  theme_bw() + 
+  xlim(1,30) + 
+  ylim(0,5) +
+  xlab("Drive (Hz)") + 
+  ylab("H") + 
+  stat_summary(data=h_exp1[h_exp1$X %in% c("stim_p"),], 
+               aes(x=Drive, y=mean), geom="line", fun.y=mean, color="red") + 
+  ggtitle("")
+
+pdf("figures/mult.pdf", width = 3, height = 6)
+grid.arrange(p1, p2, p3, ncol=1)
+dev.off()
+```
+
+```{r plot_add, echo=FALSE, fig.width=6, fig.height=3}
+p1 <- qplot(data=mi_exp1[mi_exp1$X %in% c("summed_p"),], 
+            x=Drive, group=Modulation, color=Modulation, y=mean, geom="line") + 
+  theme_bw() + 
+  xlim(1,30) + 
+  ylim(0,.2) +
+  xlab("") + 
+  ylab("MI") + 
+  stat_summary(data=mi_exp1[mi_exp1$X %in% c("stim_p"),], 
+               aes(x=Drive, y=mean), geom="line", fun.y=mean, color="red") + 
+  ggtitle("+")
+
+p2 <- qplot(data=pac_exp1[pac_exp1$X %in% c("summed_p"),], 
+            x=Drive, group=Modulation, color=Modulation, y=mean, geom="line") + 
+  theme_bw() + 
+  xlim(1,30) + 
+  ylim(0,1) +
+  xlab("") + 
+  ylab("PAC") + 
+  stat_summary(data=pac_exp1[pac_exp1$X %in% c("stim_p"),], 
+               aes(x=Drive, y=mean), geom="line", fun.y=mean, color="red") + 
+  ggtitle("")
+
+p3 <- qplot(data=h_exp1[h_exp1$X %in% c("summed_p"),], 
+            x=Drive, group=Modulation, color=Modulation, y=mean, geom="line") + 
+  theme_bw() + 
+  xlim(1,30) + 
+  ylim(0,5) +
+  xlab("Drive (Hz)") + 
+  ylab("H") + 
+  stat_summary(data=h_exp1[h_exp1$X %in% c("stim_p"),], 
+               aes(x=Drive, y=mean), geom="line", fun.y=mean, color="red") + 
+  ggtitle("")
+
+pdf("figures/add.pdf", width = 3, height = 6)
+grid.arrange(p1, p2, p3, ncol=1)
+dev.off()
+```
+
+```{r plot_sub, echo=FALSE, fig.width=6, fig.height=3}
+p1 <- qplot(data=mi_exp1[mi_exp1$X %in% c("silenced_p"),], 
+            x=Drive, group=Modulation, color=Modulation, y=mean, geom="line") + 
+  theme_bw() + 
+  xlim(1,30) + 
+  ylim(0,.2) +
+  xlab("") + 
+  ylab("MI") + 
+  stat_summary(data=mi_exp1[mi_exp1$X %in% c("stim_p"),], 
+               aes(x=Drive, y=mean), geom="line", fun.y=mean, color="red") + 
+  ggtitle("-")
+
+p2 <- qplot(data=pac_exp1[pac_exp1$X %in% c("silenced_p"),], 
+            x=Drive, group=Modulation, color=Modulation, y=mean, geom="line") + 
+  theme_bw() + 
+  xlim(1,30) + 
+  ylim(0,1) +
+  xlab("") + 
+  ylab("PAC") + 
+  stat_summary(data=pac_exp1[pac_exp1$X %in% c("stim_p"),], 
+               aes(x=Drive, y=mean), geom="line", fun.y=mean, color="red") + 
+  ggtitle("")
+
+p3 <- qplot(data=h_exp1[h_exp1$X %in% c("silenced_p"),], 
+            x=Drive, group=Modulation, color=Modulation, y=mean, geom="line") + 
+  theme_bw() + 
+  xlim(1,30) + 
+  ylim(0,5) +
+  xlab("Drive (Hz)") + 
+  ylab("H") + 
+  stat_summary(data=h_exp1[h_exp1$X %in% c("stim_p"),], 
+               aes(x=Drive, y=mean), geom="line", fun.y=mean, color="red") + 
+  ggtitle("")
+
+pdf("figures/sub.pdf", width = 3, height = 6)
+grid.arrange(p1, p2, p3, ncol=1)
+dev.off()
+```
+
+```{r plot_sync, echo=FALSE, fig.width=6, fig.height=3}
+p1 <- qplot(data=mi_exp5[mi_exp5$X %in% c("gain_bp"),], 
+            x=Drive, group=Modulation, color=Modulation, y=mean, geom="line") + 
+  theme_bw() + 
+  xlim(1,30) + 
+  ylim(0,.2) +
+  xlab("") + 
+  ylab("MI") + 
+  stat_summary(data=mi_exp5[mi_exp5$X %in% c("stim_p"),], 
+               aes(x=Drive, y=mean), geom="line", fun.y=mean, color="red") + 
+  ggtitle("S")
+
+p2 <- qplot(data=pac_exp5[pac_exp5$X %in% c("gain_bp"),], 
+            x=Drive, group=Modulation, color=Modulation, y=mean, geom="line") + 
+  theme_bw() + 
+  xlim(1,30) + 
+  ylim(0,1) +
+  xlab("") + 
+  ylab("PAC") + 
+  stat_summary(data=pac_exp5[pac_exp5$X %in% c("stim_p"),], 
+               aes(x=Drive, y=mean), geom="line", fun.y=mean, color="red") + 
+  ggtitle("")
+
+p3 <- qplot(data=h_exp5[h_exp5$X %in% c("gain_bp"),], 
+            x=Drive, group=Modulation, color=Modulation, y=mean, geom="line") + 
+  theme_bw() + 
+  xlim(1,30) + 
+  ylim(0,5) +
+  xlab("Drive (Hz)") + 
+  ylab("H") + 
+  stat_summary(data=h_exp5[h_exp5$X %in% c("stim_p"),], 
+               aes(x=Drive, y=mean), geom="line", fun.y=mean, color="red") + 
+  ggtitle("")
+
+pdf("figures/sync.pdf", width = 3, height = 6)
+grid.arrange(p1, p2, p3, ncol=1)
+dev.off()
+```
