@@ -1,0 +1,64 @@
+---
+title: "Experiments 27"
+author: "Erik J Peterson"
+date: "June 18, 2015"
+output:
+  html_document:
+    number_sections: yes
+    theme: spacelab
+    toc: yes
+---
+
+# Reparameterization of Exp24, the assembly + noise implementation.
+
+
+```{r helper_fns, echo=FALSE}
+library(ggplot2)
+library(gridExtra)
+
+load.data <- function(path, type, rates, gmults, ges, gis){
+  df <- NULL
+  for(r_s in rates){
+    for(gmult in gmults){
+      for(ge in ges){
+        for(gi in gis){
+          try({
+            name <- paste("Istim-", as.character(r_s), 
+                      "_gmult-", as.character(gmult), 
+                      "_ge-", as.character(ge), 
+                      "_gi-", as.character(gi), 
+                      "_", as.character(type), 
+                      "_summary.csv", sep="")
+            
+            di <- read.csv(paste(path, name, sep=""))
+            di["Istim"] <- rep(r_s, nrow(di))
+            di["gmult"] <- rep(gmult, nrow(di))
+            di["ge"] <- rep(ge, nrow(di))
+            di["gi"] <- rep(gi, nrow(di))
+            df <- rbind(df, di)
+         })
+        }
+      }
+    }
+  }
+  df
+}
+```
+
+
+```{r}
+path <- "/home/ejp/src/pacological/data"
+
+rates <- c(1, 6, 11, 16, 21, 26, 31)
+gmults <- c(1, 2, 3, 4)
+ges <- c(1, 2, 3)
+gis <- c(1, 2, 3)
+
+exp27path <- paste(path, "/exp27/", sep="")
+mi_exp27 <- load.data(exp27path, "MI", rates, gmults, ges, gis)
+h_exp27 <- load.data(exp27path, "H", rates, gmults, ges, gis)
+pac_exp27 <- load.data(exp27path, "PAC", rates, gmults, ges, gis)
+
+stim <- stat_summary(data=subset(mi_exp27, X == 'stim_p'), aes(x=Istim, y=mean), geom="line", fun.y=mean, color="red")
+ggplot(data=subset(mi_exp27, X == 'gain_p'), aes(x=Istim, y=mean, group=gmult, color=gmult)) + geom_line() + ylab("MI") + stim + theme_bw()
+```

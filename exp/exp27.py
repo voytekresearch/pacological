@@ -10,9 +10,8 @@ from noisy import lfp
 from neurosrc.pac.pac_tools import pac as scpac
 # from brian import correlogram
 
-def run(n, n_b, t, Iosc, f, Istim, Sstim, Iback, Ipub, Ipri,
+def run(n, n_b, t, gmult, ge, gi, Iosc, f, Istim, Sstim, Iback, Ipub, Ipri,
         dt, pac_type='plv', stim_seed=None):
-    # rate = 1.0 / dt
 
     # -- SIM ---------------------------------------------------------------------
     # Init spikers
@@ -30,10 +29,9 @@ def run(n, n_b, t, Iosc, f, Istim, Sstim, Iback, Ipub, Ipri,
     d_bias['stim'] = pac.stim(times, Istim, Sstim, seed=stim_seed) + \
         d_bias['public']
 
-    d_bias['gain'] = d_bias['osc'] * d_bias['stim']
-    d_bias['gain_silenced'] = (d_bias['osc'] * d_bias['stim']) - d_bias['osc']
-    d_bias['summed'] = d_bias['osc'] + d_bias['stim']
-    d_bias['silenced'] = d_bias['stim'] - d_bias['osc']
+    d_bias['gain'] = (gmult * d_bias['osc']) * d_bias['stim']
+    d_bias['summed'] = (ge * d_bias['osc']) + d_bias['stim']
+    d_bias['silenced'] = d_bias['stim'] - (gi * d_bias['osc'])
 
     # --
     # Simulate spiking
@@ -117,6 +115,7 @@ if __name__ == "__main__":
     n_b = int((1 - pn) * N)
 
     Iback = 2
+    Iosc = 1
     Ipub = 1
     Ipri = 0.1
     Sstim = .05
@@ -126,15 +125,18 @@ if __name__ == "__main__":
     f = 10
 
     # Drives and iteration counter
-    Ioscs = range(2, 32, 2)
-    Istims = range(2, 32, 2)
     iterations = range(100)
 
-    params = product(Ioscs, Istims)
-    for Iosc, Istim in params:
+    Istims = range(1, 35, 5)
+    ges = range(1, 4)
+    gis = range(1, 4)
+    gmults = range(1, 5)
+
+    params = product(Istims, gmults, ges, gis)
+    for Istim, gmult, ge, gi in params:
         # Create basename for the data
-        basename = "Iosc-{0}_Istim-{1}".format(
-                Iosc, Istim)
+        basename = "Istim-{0}_gmult-{1}_ge-{2}_gi-{3}".format(
+                Istim, gmult, ge, gi)
         print(basename)
         basepath = os.path.join(path, basename)
 
@@ -147,8 +149,9 @@ if __name__ == "__main__":
         # -- Run
         for i in iterations:
             print(i)
-            res = run(n, n_b, t, Iosc, f, Istim, Sstim * Istim, Iback, Ipub, Ipri,
-                dt, pac_type='plv', stim_seed=i)
+            res = run(n, n_b, t, gmult, ge, gi, Iosc, f,
+                      Istim, Sstim * Istim, Iback, Ipub, Ipri,
+                      dt, pac_type='plv', stim_seed=i)
 
             # Process the result
             hys = {}

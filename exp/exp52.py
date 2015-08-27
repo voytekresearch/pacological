@@ -27,11 +27,10 @@ def run(n, n_b, t, Iosc, f, Istim, Sstim, Iback, Ipub, Ipri,
     d_bias['back'] = pac.constant(times, Iback)
     d_bias['public'] = pac.constant(times, Ipub)
     d_bias['osc'] = pac.osc(times, Iosc, f)
-    d_bias['stim'] = pac.stim(times, Istim, Sstim, seed=stim_seed) + \
-        d_bias['public']
+    d_bias['stim'] = pac.stim(times, Istim, Sstim, seed=stim_seed) # + \
+        # d_bias['public']
 
     d_bias['gain'] = d_bias['osc'] * d_bias['stim']
-    d_bias['gain_silenced'] = (d_bias['osc'] * d_bias['stim']) - d_bias['osc']
     d_bias['summed'] = d_bias['osc'] + d_bias['stim']
     d_bias['silenced'] = d_bias['stim'] - d_bias['osc']
 
@@ -111,10 +110,11 @@ if __name__ == "__main__":
     path = sys.argv[1]
 
     # -- USER SETTINGS --------------------------------------------------------
-    N = 1000
-    pn = 0.5
+    N = 250
+    pn = 0.99
     n = int(pn * N)
-    n_b = int((1 - pn) * N)
+    # n_b = int((1 - pn) * N)
+    n_b = 2
 
     Iback = 2
     Ipub = 1
@@ -128,7 +128,7 @@ if __name__ == "__main__":
     # Drives and iteration counter
     Ioscs = range(2, 32, 2)
     Istims = range(2, 32, 2)
-    iterations = range(100)
+    iterations = range(20)
 
     params = product(Ioscs, Istims)
     for Iosc, Istim in params:

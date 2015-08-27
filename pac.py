@@ -12,8 +12,12 @@ class Spikes(object):
     def __init__(self, n, t, dt=0.001, refractory=0.002, seed=None,
                  private_stdev=0):
 
+        # Ensure reproducible randomess
         self.seed = seed
-        np.random.seed(self.seed)
+        if self.seed is not None:
+            self.prng = np.random.RandomState(seed)
+        else:
+            self.prng = np.random.RandomState()
 
         # Init constraints
         if n < 2:
@@ -39,7 +43,7 @@ class Spikes(object):
 
         # Create uniform sampling distributions for each neuron
         self.unifs = np.vstack(
-            [np.random.uniform(0, 1, self.n_steps) for i in xrange(self.n)]
+            [self.prng.uniform(0, 1, self.n_steps) for i in xrange(self.n)]
         ).transpose()
 
     def _constraints(self, drive, oscillation):
@@ -47,11 +51,6 @@ class Spikes(object):
             raise ValueError("Shape of `drive` and `oscillation' must match")
         if drive.ndim != 1:
             raise ValueError("`drive` and `oscillation` must be 1d")
-
-        if np.all(drive < 0):
-            raise ValueError("`drive` must be greater than 0")
-        if np.all(oscillation < 0):
-            raise ValueError("`oscillation` must be greater than 0")
 
     def _refractory(self, spks):
         lw = int(self.refractory / self.dt)  # len of refractory window
@@ -71,7 +70,7 @@ class Spikes(object):
         # No bias unless private_stdev is specified
         biases = np.zeros(self.n)
         if self.private_stdev > 0:
-            biases = np.random.normal(0, self.private_stdev, size=self.n)
+            biases = self.prng.normal(0, self.private_stdev, size=self.n)
 
         # Poisson method taken from
         # http://www.cns.nyu.edu/~david/handouts/poisson.pdf
@@ -96,7 +95,7 @@ class Spikes(object):
             #
             # Repeat until we're out of j
             # or u > p
-            np.random.shuffle(js)
+            self.prng.shuffle(js)
             for j in js:
                 if self.unifs[i, j] <= ps[i]:
                     spikes[i, j] = 1
@@ -138,7 +137,7 @@ class Spikes(object):
 
         ps = rates * excitability
         ns = np.arange(self.n)
-        np.random.shuffle(ns)
+        self.prng.shuffle(ns)
 
         spikes = np.zeros_like(self.unifs, np.int)
         for i in xrange(self.n_steps):
@@ -150,7 +149,7 @@ class Spikes(object):
                     spikes[i, j] = 1
 
                     no_j = ns[ns != j]
-                    np.random.shuffle(no_j)
+                    self.prng.shuffle(no_j)
                     for jn in no_j[0:k]:
                         spikes[i, jn] = 1
 
@@ -194,12 +193,14 @@ def osc(times, a, f):
 def stim(times, d, scale, seed=None):
     """Naturalistic bias (via diffusion model)"""
 
+    normal = np.random.normal
     if seed is not None:
-        np.random.seed(seed)
+        prng = np.random.RandomState(seed)
+        normal = prng.normal
 
     rates = [d, ]
     for t in times[1:]:
-        d += np.random.normal(0, scale)
+        d += normal(0, scale)
         rates.append(d)
 
     rates = np.array(rates)

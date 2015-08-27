@@ -1,0 +1,161 @@
+---
+title: "Experiments 29, 50-2"
+author: "Erik J Peterson"
+date: "8-12-2015"
+output:
+  html_document:
+    number_sections: yes
+    theme: spacelab
+    toc: yes
+---
+
+
+# Reparameterization of Exp24, the assembly + noise implementation. 
+
+Here N = 500; Experiments 24-8 were N = 1000. 
+
+Exp 52 was N = 250 (no noise model; a confirmation of past findings)
+
+```{r helper_fns, echo=FALSE, fig.width=12, fig.height=3, echo=FALSE, warning=FALSE, message=FALSE}
+library(ggplot2)
+library(gridExtra)
+
+path <- "/home/ejp/src/pacological/data"
+
+load.data <- function(path, type, rates){
+  df <- NULL
+  for(r_o in rates){
+    for(r_s in rates){
+      try({
+        name <- paste("Iosc-", as.character(r_o), 
+                      "_Istim-", as.character(r_s), 
+                      "_", as.character(type), 
+                      "_summary.csv", sep="")
+        di <- read.csv(paste(path, name, sep=""))
+        di["Iosc"] <- rep(r_o, nrow(di))
+        di["Istim"] <- rep(r_s, nrow(di))
+        
+        df <- rbind(df, di)  
+        })
+      }
+    }
+  df
+  }
+```
+
+```{r exps, echo=FALSE, warning=FALSE, message=FALSE}
+rates <- c(2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30)
+
+exp29path <- paste(path, "/exp29/", sep="")
+mi_exp29 <- load.data(exp29path, "MI", rates)
+h_exp29 <- load.data(exp29path, "H", rates)
+pac_exp29 <- load.data(exp29path, "PAC", rates)
+
+exp50path <- paste(path, "/exp50/", sep="")
+mi_exp50 <- load.data(exp50path, "MI", rates)
+h_exp50 <- load.data(exp50path, "H", rates)
+pac_exp50 <- load.data(exp50path, "PAC", rates)
+
+exp51path <- paste(path, "/exp51/", sep="")
+mi_exp51 <- load.data(exp51path, "MI", rates)
+h_exp51 <- load.data(exp51path, "H", rates)
+pac_exp51 <- load.data(exp51path, "PAC", rates)
+
+exp52path <- paste(path, "/exp52/", sep="")
+mi_exp52 <- load.data(exp52path, "MI", rates)
+h_exp52 <- load.data(exp52path, "H", rates)
+pac_exp52 <- load.data(exp52path, "PAC", rates)
+```
+
+## MIs
+
+### gain
+
+```{r plot_mi_gain, fig.width=12, fig.height=3, echo=FALSE, warning=FALSE, message=FALSE}
+stim29 <- stat_summary(data=subset(mi_exp29, X == 'stim_p'), aes(x=Istim, y=mean), geom="line", fun.y=mean, color="red")
+p29 <- ggplot(data=subset(mi_exp29, X == 'gain_p'), aes(x=Istim, y=mean, group=Iosc, color=Iosc)) + geom_line() + ylab("MI") + stim29 + theme_bw() + ggtitle("exp29\np_n = 0.25") + ylim(0,1)
+
+stim50 <- stat_summary(data=subset(mi_exp50, X == 'stim_p'), aes(x=Istim, y=mean), geom="line", fun.y=mean, color="red")
+p50 <- ggplot(data=subset(mi_exp50, X == 'gain_p'), aes(x=Istim, y=mean, group=Iosc, color=Iosc)) + geom_line() + ylab("MI") + stim50 + theme_bw() + ggtitle("exp50\np_n = 0.5") + ylim(0,1)
+
+stim51 <- stat_summary(data=subset(mi_exp51, X == 'stim_p'), aes(x=Istim, y=mean), geom="line", fun.y=mean, color="red")
+p51 <- ggplot(data=subset(mi_exp51, X == 'gain_p'), aes(x=Istim, y=mean, group=Iosc, color=Iosc)) + geom_line() + ylab("MI") + stim51 + theme_bw() + ggtitle("exp51\np_n = 0.75") + ylim(0,1)
+
+stim52 <- stat_summary(data=subset(mi_exp52, X == 'stim_p'), aes(x=Istim, y=mean), geom="line", fun.y=mean, color="red")
+p52 <- ggplot(data=subset(mi_exp52, X == 'gain_p'), aes(x=Istim, y=mean, group=Iosc, color=Iosc)) + geom_line() + ylab("MI") + stim52 + theme_bw() + ggtitle("exp52\np_n = 1, N = 250") + ylim(0,1)
+
+grid.arrange(p29, p50, p51, p52, nrow=1)
+```
+
+* Still divergent from prior gain runs. It seems its not `N` as I thought (from exp 24-7). 
+* Exp 51 removed teh background noise and the drive noise. MI effect is back.
+
+### Additive
+
+```{r plot_mi_add, fig.width=12, fig.height=3, echo=FALSE, warning=FALSE, message=FALSE}
+stim29 <- stat_summary(data=subset(mi_exp29, X == 'stim_p'), aes(x=Istim, y=mean), geom="line", fun.y=mean, color="red")
+p29 <- ggplot(data=subset(mi_exp29, X == 'summed_p'), aes(x=Istim, y=mean, group=Iosc, color=Iosc)) + geom_line() + ylab("MI") + stim29 + theme_bw() + ggtitle("exp29\np_n = 0.25") + ylim(0,1)
+
+stim50 <- stat_summary(data=subset(mi_exp50, X == 'stim_p'), aes(x=Istim, y=mean), geom="line", fun.y=mean, color="red")
+p50 <- ggplot(data=subset(mi_exp50, X == 'summed_p'), aes(x=Istim, y=mean, group=Iosc, color=Iosc)) + geom_line() + ylab("MI") + stim50 + theme_bw() + ggtitle("exp50\np_n = 0.5") + ylim(0,1)
+
+stim51 <- stat_summary(data=subset(mi_exp51, X == 'stim_p'), aes(x=Istim, y=mean), geom="line", fun.y=mean, color="red")
+p51 <- ggplot(data=subset(mi_exp51, X == 'summed_p'), aes(x=Istim, y=mean, group=Iosc, color=Iosc)) + geom_line() + ylab("MI") + stim51 + theme_bw() + ggtitle("exp51\np_n = 0.75") + ylim(0,1)
+
+stim52 <- stat_summary(data=subset(mi_exp52, X == 'stim_p'), aes(x=Istim, y=mean), geom="line", fun.y=mean, color="red")
+p52 <- ggplot(data=subset(mi_exp52, X == 'summed_p'), aes(x=Istim, y=mean, group=Iosc, color=Iosc)) + geom_line() + ylab("MI") + stim52 + theme_bw() + ggtitle("exp52\np_n = 1, N = 250") + ylim(0,1)
+
+grid.arrange(p29, p50, p51, p52, nrow=1)
+```
+
+* Always pathological.
+* Recruitment doesn't change scaling.
+
+
+### Subtractive
+
+```{r plot_mi_sub, fig.width=12, fig.height=3, echo=FALSE, warning=FALSE, message=FALSE}
+stim29 <- stat_summary(data=subset(mi_exp29, X == 'stim_p'), aes(x=Istim, y=mean), geom="line", fun.y=mean, color="red")
+p29 <- ggplot(data=subset(mi_exp29, X == 'silenced_p'), aes(x=Istim, y=mean, group=Iosc, color=Iosc)) + geom_line() + ylab("MI") + stim29 + theme_bw() + ggtitle("exp29\np_n = 0.25") + ylim(0,1)
+
+stim50 <- stat_summary(data=subset(mi_exp50, X == 'stim_p'), aes(x=Istim, y=mean), geom="line", fun.y=mean, color="red")
+p50 <- ggplot(data=subset(mi_exp50, X == 'silenced_p'), aes(x=Istim, y=mean, group=Iosc, color=Iosc)) + geom_line() + ylab("MI") + stim50 + theme_bw() + ggtitle("exp50\np_n = 0.5") + ylim(0,1)
+
+stim51 <- stat_summary(data=subset(mi_exp51, X == 'stim_p'), aes(x=Istim, y=mean), geom="line", fun.y=mean, color="red")
+p51 <- ggplot(data=subset(mi_exp51, X == 'silenced_p'), aes(x=Istim, y=mean, group=Iosc, color=Iosc)) + geom_line() + ylab("MI") + stim51 + theme_bw() + ggtitle("exp51\np_n = 0.75") + ylim(0,1)
+
+stim52 <- stat_summary(data=subset(mi_exp52, X == 'stim_p'), aes(x=Istim, y=mean), geom="line", fun.y=mean, color="red")
+p52 <- ggplot(data=subset(mi_exp52, X == 'silenced_p'), aes(x=Istim, y=mean, group=Iosc, color=Iosc)) + geom_line() + ylab("MI") + stim52 + theme_bw() + ggtitle("exp52\np_n = 1, N = 250") + ylim(0,1)
+
+grid.arrange(p29, p50, p51, p52, nrow=1)
+```
+
+* Subtractive interactions (in the prescence of background population noise) leads to beneficial PAC.
+* As recruiment (i.e. `n_p`) increases the benefit decreases
+
+- **General note**: even when PAC is beneficial that benefit is sometimes limited to lower values of Istim (multiplicative)
+- and is sometimes limited to small values of Iosc (subtractive)
+- but not always (multplicative).
+
+- **The benefit of PAC is generally both mechanism dependent and drive dependent.**
+
+
+## PACs
+
+```{r plot_pac, fig.width=12, fig.height=3, echo=FALSE, warning=FALSE, message=FALSE}
+stim29 <- stat_summary(data=subset(pac_exp29, X == 'stim_p'), aes(x=Istim, y=mean), geom="line", fun.y=mean, color="red")
+p29 <- ggplot(data=subset(pac_exp29, X == 'gain_p'), aes(x=Istim, y=mean, group=Iosc, color=Iosc)) + geom_line() + ylab("pac") + stim29 + theme_bw() + ggtitle("exp29\np_n = 0.25") + ylim(0,1)
+
+stim50 <- stat_summary(data=subset(pac_exp50, X == 'stim_p'), aes(x=Istim, y=mean), geom="line", fun.y=mean, color="red")
+p50 <- ggplot(data=subset(pac_exp50, X == 'gain_p'), aes(x=Istim, y=mean, group=Iosc, color=Iosc)) + geom_line() + ylab("pac") + stim50 + theme_bw() + ggtitle("exp50\np_n = 0.5") + ylim(0,1)
+
+stim51 <- stat_summary(data=subset(pac_exp51, X == 'stim_p'), aes(x=Istim, y=mean), geom="line", fun.y=mean, color="red")
+p51 <- ggplot(data=subset(pac_exp51, X == 'gain_p'), aes(x=Istim, y=mean, group=Iosc, color=Iosc)) + geom_line() + ylab("pac") + stim51 + theme_bw() + ggtitle("exp51\np_n = 0.75") + ylim(0,1)
+
+stim52 <- stat_summary(data=subset(pac_exp52, X == 'stim_p'), aes(x=Istim, y=mean), geom="line", fun.y=mean, color="red")
+p52 <- ggplot(data=subset(pac_exp52, X == 'gain_p'), aes(x=Istim, y=mean, group=Iosc, color=Iosc)) + geom_line() + ylab("pac") + stim52 + theme_bw() + ggtitle("exp52\np_n = 1, N = 250") + ylim(0,1)
+
+grid.arrange(p29, p50, p51, p52, nrow=1)
+```
+
+* If anything, the ability to measure PAC over stimulus is enhanced by the background noise model.

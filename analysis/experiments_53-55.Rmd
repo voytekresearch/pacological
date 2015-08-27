@@ -1,0 +1,132 @@
+---
+title: "Experiments 53-55"
+author: "Erik J Peterson"
+date: "8-26-2015"
+output:
+  html_document:
+    number_sections: yes
+    theme: spacelab
+    toc: yes
+---
+
+
+# Background was stim; PAC works by assembly recruitment.
+
+N = 500
+
+```{r helper_fns, echo=FALSE, fig.width=12, fig.height=3, echo=FALSE, warning=FALSE, message=FALSE}
+library(ggplot2)
+library(gridExtra)
+
+path <- "/home/ejp/src/pacological/data"
+
+load.data <- function(path, type, rates){
+  df <- NULL
+  for(r_o in rates){
+    for(r_s in rates){
+      try({
+        name <- paste("Iosc-", as.character(r_o), 
+                      "_Istim-", as.character(r_s), 
+                      "_", as.character(type), 
+                      "_summary.csv", sep="")
+        di <- read.csv(paste(path, name, sep=""))
+        di["Iosc"] <- rep(r_o, nrow(di))
+        di["Istim"] <- rep(r_s, nrow(di))
+        
+        df <- rbind(df, di)  
+        })
+      }
+    }
+  df
+  }
+```
+
+```{r exps, echo=FALSE, warning=FALSE, message=FALSE}
+rates <- c(2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30)
+
+exp53path <- paste(path, "/exp53/", sep="")
+mi_exp53 <- load.data(exp53path, "MI", rates)
+h_exp53 <- load.data(exp53path, "H", rates)
+pac_exp53 <- load.data(exp53path, "PAC", rates)
+
+exp54path <- paste(path, "/exp54/", sep="")
+mi_exp54 <- load.data(exp54path, "MI", rates)
+h_exp54 <- load.data(exp54path, "H", rates)
+pac_exp54 <- load.data(exp54path, "PAC", rates)
+
+exp55path <- paste(path, "/exp55/", sep="")
+mi_exp55 <- load.data(exp55path, "MI", rates)
+h_exp55 <- load.data(exp55path, "H", rates)
+pac_exp55 <- load.data(exp55path, "PAC", rates)
+```
+
+## MIs
+
+### Gain
+```{r plot_mi_gain, fig.width=12, fig.height=3, echo=FALSE, warning=FALSE, message=FALSE}
+stim53 <- stat_summary(data=subset(mi_exp53, X == 'stim_p'), aes(x=Istim, y=mean), geom="line", fun.y=mean, color="red")
+p53 <- ggplot(data=subset(mi_exp53, X == 'gain_p'), aes(x=Istim, y=mean, group=Iosc, color=Iosc)) + geom_line() + ylab("MI") + stim53 + theme_bw() + ggtitle("exp53\np_n = 0.25") + ylim(0,2)
+
+stim54 <- stat_summary(data=subset(mi_exp54, X == 'stim_p'), aes(x=Istim, y=mean), geom="line", fun.y=mean, color="red")
+p54 <- ggplot(data=subset(mi_exp54, X == 'gain_p'), aes(x=Istim, y=mean, group=Iosc, color=Iosc)) + geom_line() + ylab("MI") + stim54 + theme_bw() + ggtitle("exp54\np_n = 0.5") + ylim(0,2)
+
+stim55 <- stat_summary(data=subset(mi_exp55, X == 'stim_p'), aes(x=Istim, y=mean), geom="line", fun.y=mean, color="red")
+p55 <- ggplot(data=subset(mi_exp55, X == 'gain_p'), aes(x=Istim, y=mean, group=Iosc, color=Iosc)) + geom_line() + ylab("MI") + stim55 + theme_bw() + ggtitle("exp55\np_n = 0.75") + ylim(0,2)
+
+grid.arrange(p53, p54, p55, nrow=1)
+```
+
+* Increasing recruitment (i.e. `p_n`) increases MI. If `p_n` becomes one (at N=250) I(PAC,S) would be beneficial
+* Overall neuron number still crucial in setting beneficial versus patological PAC
+
+### Additive
+
+```{r plot_mi_add, fig.width=12, fig.height=3, echo=FALSE, warning=FALSE, message=FALSE}
+stim53 <- stat_summary(data=subset(mi_exp53, X == 'stim_p'), aes(x=Istim, y=mean), geom="line", fun.y=mean, color="red")
+p53 <- ggplot(data=subset(mi_exp53, X == 'summed_p'), aes(x=Istim, y=mean, group=Iosc, color=Iosc)) + geom_line() + ylab("MI") + stim53 + theme_bw() + ggtitle("exp53\np_n = 0.25") + ylim(0,2)
+
+stim54 <- stat_summary(data=subset(mi_exp54, X == 'stim_p'), aes(x=Istim, y=mean), geom="line", fun.y=mean, color="red")
+p54 <- ggplot(data=subset(mi_exp54, X == 'summed_p'), aes(x=Istim, y=mean, group=Iosc, color=Iosc)) + geom_line() + ylab("MI") + stim54 + theme_bw() + ggtitle("exp54\np_n = 0.5") + ylim(0,2)
+
+stim55 <- stat_summary(data=subset(mi_exp55, X == 'stim_p'), aes(x=Istim, y=mean), geom="line", fun.y=mean, color="red")
+p55 <- ggplot(data=subset(mi_exp55, X == 'summed_p'), aes(x=Istim, y=mean, group=Iosc, color=Iosc)) + geom_line() + ylab("MI") + stim55 + theme_bw() + ggtitle("exp55\np_n = 0.75") + ylim(0,2)
+
+grid.arrange(p53, p54, p55, nrow=1)
+```
+
+* Recruiment has no effect. PAC is always pathological.
+
+### Subtractive
+
+```{r plot_mi_sub, fig.width=12, fig.height=3, echo=FALSE, warning=FALSE, message=FALSE}
+stim53 <- stat_summary(data=subset(mi_exp53, X == 'stim_p'), aes(x=Istim, y=mean), geom="line", fun.y=mean, color="red")
+p53 <- ggplot(data=subset(mi_exp53, X == 'silenced_p'), aes(x=Istim, y=mean, group=Iosc, color=Iosc)) + geom_line() + ylab("MI") + stim53 + theme_bw() + ggtitle("exp53\np_n = 0.25") + ylim(0,2)
+
+stim54 <- stat_summary(data=subset(mi_exp54, X == 'stim_p'), aes(x=Istim, y=mean), geom="line", fun.y=mean, color="red")
+p54 <- ggplot(data=subset(mi_exp54, X == 'silenced_p'), aes(x=Istim, y=mean, group=Iosc, color=Iosc)) + geom_line() + ylab("MI") + stim54 + theme_bw() + ggtitle("exp54\np_n = 0.5") + ylim(0,2)
+
+stim55 <- stat_summary(data=subset(mi_exp55, X == 'stim_p'), aes(x=Istim, y=mean), geom="line", fun.y=mean, color="red")
+p55 <- ggplot(data=subset(mi_exp55, X == 'silenced_p'), aes(x=Istim, y=mean, group=Iosc, color=Iosc)) + geom_line() + ylab("MI") + stim55 + theme_bw() + ggtitle("exp55\np_n = 0.75") + ylim(0,2)
+
+grid.arrange(p53, p54, p55, nrow=1)
+```
+
+* At low `p_n` subtraction *enhances* MI. (Very unexpected.)
+* Recruiment inversely related to enhancement, but
+* Even strong recruitment gives nearly beneficial PAC
+
+## PACs
+
+```{r plot_pac, fig.width=12, fig.height=3, echo=FALSE, warning=FALSE, message=FALSE}
+stim53 <- stat_summary(data=subset(pac_exp53, X == 'stim_p'), aes(x=Istim, y=mean), geom="line", fun.y=mean, color="red")
+p53 <- ggplot(data=subset(pac_exp53, X == 'gain_p'), aes(x=Istim, y=mean, group=Iosc, color=Iosc)) + geom_line() + ylab("pac") + stim53 + theme_bw() + ggtitle("exp53\np_n = 0.25") + ylim(0,1)
+
+stim54 <- stat_summary(data=subset(pac_exp54, X == 'stim_p'), aes(x=Istim, y=mean), geom="line", fun.y=mean, color="red")
+p54 <- ggplot(data=subset(pac_exp54, X == 'gain_p'), aes(x=Istim, y=mean, group=Iosc, color=Iosc)) + geom_line() + ylab("pac") + stim54 + theme_bw() + ggtitle("exp54\np_n = 0.5") + ylim(0,1)
+
+stim55 <- stat_summary(data=subset(pac_exp55, X == 'stim_p'), aes(x=Istim, y=mean), geom="line", fun.y=mean, color="red")
+p55 <- ggplot(data=subset(pac_exp55, X == 'gain_p'), aes(x=Istim, y=mean, group=Iosc, color=Iosc)) + geom_line() + ylab("pac") + stim55 + theme_bw() + ggtitle("exp55\np_n = 0.75") + ylim(0,1)
+
+grid.arrange(p53, p54, p55, nrow=1)
+```
+

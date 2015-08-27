@@ -169,6 +169,109 @@ exp23:
 	-rm data/exp23/*
 	nice -19 python exp/exp23.py data/exp23/
 
+# --
+# Assembly recruitment implementation, with improved noise model
+# pn = 0.5
+exp24:
+	-mkdir data/exp24
+	-rm data/exp24/*
+	nice -19 python exp/exp24.py data/exp24/
+
+# pn = 0.25
+exp25:
+	-mkdir data/exp25
+	-rm data/exp25/*
+	nice -19 python exp/exp25.py data/exp25/
+
+# pn = 0.75
+exp26:
+	-mkdir data/exp26
+	-rm data/exp26/*
+	nice -19 python exp/exp26.py data/exp26/
+
+# pn = 0.99
+exp28:
+	-mkdir data/exp28
+	-rm data/exp28/*
+	nice -19 python exp/exp28.py data/exp28/
+
+# In exp24-6 MI was below stim_p. N is the cause, like in the intial sims?
+# So set N = 500. If this fixes it, why is not intuitive. I though the 
+# Background would have a much stronger effect. It doesn't seem to be doing 
+# anything? Double check implementation?
+#
+# p = 0.25
+exp29:
+	-mkdir data/exp29
+	-rm data/exp29/*
+	nice -19 python exp/exp29.py data/exp29/
+
+# p = 0.50
+exp50:
+	-mkdir data/exp50
+	-rm data/exp50/*
+	nice -19 python exp/exp50.py data/exp50/
+
+# p = 0.75
+exp51:
+	-mkdir data/exp51
+	-rm data/exp51/*
+	nice -19 python exp/exp51.py data/exp51/
+
+# pn = 0.99 (i.e. two neuron background), N = 250, constant bias off
+# this should reproduce gain_p giving higher than stim MI
+# Looked fine.
+exp52:
+	-mkdir data/exp52
+	-rm data/exp52/*
+	nice -19 python exp/exp52.py data/exp52/
+
+# --
+# Consider the background is stimulus and then a
+# subpop gets PACed.
+back_stim: exp53 exp54 exp55
+
+
+exp53:
+	-mkdir data/exp53
+	-rm data/exp53/*
+	nice -19 python exp/exp53.py data/exp53/
+
+exp54:
+	-mkdir data/exp54
+	-rm data/exp54/*
+	nice -19 python exp/exp54.py data/exp54/
+
+exp55:
+	-mkdir data/exp55
+	-rm data/exp55/*
+	nice -19 python exp/exp55.py data/exp55/
+
+
+# -- 
+#  Recast 24 with ge/gi instead of Iosc
+#  A fairly course paramterization just to check things out.
+exp27:
+	-mkdir data/exp27
+	-rm data/exp27/*
+	nice -19 python exp/exp27.py data/exp27/
+
+
+# --
+#  Combining all the above into a set of 'final' runs
+#  these models explore g, N, p_n, Istim, ep_back
+#  back_type = constant
+exp56:
+	-mkdir data/exp56
+	-rm data/exp56/*
+	nice -19 python exp/exp56.py data/exp56/
+
+# back_type = stim
+exp57:
+	-mkdir data/exp57
+	-rm data/exp57/*
+	nice -19 python exp/exp57.py data/exp57/
+
 # ========================================================================
 # # Binary
 # Set N to a 100, 250, 500, 750, 1000

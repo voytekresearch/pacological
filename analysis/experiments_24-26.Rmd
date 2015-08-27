@@ -1,0 +1,87 @@
+---
+title: "Experiments 224-26"
+author: "Erik J Peterson"
+date: "8-12-2015"
+output:
+  html_document:
+    number_sections: yes
+    theme: spacelab
+    toc: yes
+---
+
+# Reparameterization of Exp24, the assembly + noise implementation.
+
+
+```{r helper_fns, echo=FALSE}
+library(ggplot2)
+library(gridExtra)
+
+path <- "/home/ejp/src/pacological/data"
+
+load.data <- function(path, type, rates){
+  df <- NULL
+  for(r_o in rates){
+    for(r_s in rates){
+      try({
+        name <- paste("Iosc-", as.character(r_o), 
+                      "_Istim-", as.character(r_s), 
+                      "_", as.character(type), 
+                      "_summary.csv", sep="")
+        di <- read.csv(paste(path, name, sep=""))
+        di["Iosc"] <- rep(r_o, nrow(di))
+        di["Istim"] <- rep(r_s, nrow(di))
+        
+        df <- rbind(df, di)  
+        })
+      }
+    }
+  df
+  }
+```
+
+
+```{r exp24}
+rates <- c(2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30)
+
+exp24path <- paste(path, "/exp24/", sep="")
+mi_exp24 <- load.data(exp24path, "MI", rates)
+h_exp24 <- load.data(exp24path, "H", rates)
+pac_exp24 <- load.data(exp24path, "PAC", rates)
+
+exp25path <- paste(path, "/exp25/", sep="")
+mi_exp25 <- load.data(exp25path, "MI", rates)
+h_exp25 <- load.data(exp25path, "H", rates)
+pac_exp25 <- load.data(exp25path, "PAC", rates)
+
+exp26path <- paste(path, "/exp26/", sep="")
+mi_exp26 <- load.data(exp26path, "MI", rates)
+h_exp26 <- load.data(exp26path, "H", rates)
+pac_exp26 <- load.data(exp26path, "PAC", rates)
+
+```
+
+```{r plot_gain_p}
+stim24 <- stat_summary(data=subset(mi_exp24, X == 'stim_p'), aes(x=Istim, y=mean), geom="line", fun.y=mean, color="red")
+p24 <- ggplot(data=subset(mi_exp24, X == 'gain_p'), aes(x=Istim, y=mean, group=Iosc, color=Iosc)) + geom_line() + ylab("MI") + stim24 + theme_bw()
+
+stim25 <- stat_summary(data=subset(mi_exp25, X == 'stim_p'), aes(x=Istim, y=mean), geom="line", fun.y=mean, color="red")
+p25 <- ggplot(data=subset(mi_exp25, X == 'gain_p'), aes(x=Istim, y=mean, group=Iosc, color=Iosc)) + geom_line() + ylab("MI") + stim + theme_bw()
+
+stim26 <- stat_summary(data=subset(mi_exp26, X == 'stim_p'), aes(x=Istim, y=mean), geom="line", fun.y=mean, color="red")
+p26 <- ggplot(data=subset(mi_exp26, X == 'gain_p'), aes(x=Istim, y=mean, group=Iosc, color=Iosc)) + geom_line() + ylab("MI") + stim + theme_bw()
+
+grid.arrange(p25, p24, p26, nrow=1)
+```
+
+```{r plot_gain_p}
+stim24 <- stat_summary(data=subset(mi_exp24, X == 'stim_p'), aes(x=Istim, y=mean), geom="line", fun.y=mean, color="red")
+p24 <- ggplot(data=subset(mi_exp24, X == 'gain_p'), aes(x=Istim, y=mean, group=Iosc, color=Iosc)) + geom_line() + ylab("MI") + stim24 + theme_bw()
+
+stim25 <- stat_summary(data=subset(mi_exp25, X == 'stim_p'), aes(x=Istim, y=mean), geom="line", fun.y=mean, color="red")
+p25 <- ggplot(data=subset(mi_exp25, X == 'gain_p'), aes(x=Istim, y=mean, group=Iosc, color=Iosc)) + geom_line() + ylab("MI") + stim + theme_bw()
+
+stim26 <- stat_summary(data=subset(mi_exp26, X == 'stim_p'), aes(x=Istim, y=mean), geom="line", fun.y=mean, color="red")
+p26 <- ggplot(data=subset(mi_exp26, X == 'gain_p'), aes(x=Istim, y=mean, group=Iosc, color=Iosc)) + geom_line() + ylab("MI") + stim + theme_bw()
+
+grid.arrange(p25, p24, p26, nrow=1)
+```
