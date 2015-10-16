@@ -1,0 +1,200 @@
+---
+title: "Archive of Figures"
+author: "Erik J Peterson"
+date: "September 30, 2015"
+output: html_document
+---
+
+
+# Archive
+
+## Pn scaling
+
+Not sure going to include. Interesting how things scale with `pn`.
+
+```{r pn_a, eval=FALSE, fig.width=7, fig.height=3, echo=FALSE, warning=FALSE, message=FALSE}
+# --
+# MI
+mi_exp70 %>% 
+  filter(N == 100, X %in% c("gain_p", "silenced_p", "summed_p", "stim_p")) %>%
+  droplevels() -> mi_fig3
+mi_fig3$X <- revalue(mi_fig3$X, c("gain_p"="EI", "summed_p"="E", "silenced_p"="I", "stim_p"="S"))
+
+mi_fig3 %>% 
+  group_by(Istim, g, X, pn) %>%
+  cast(Istim + g + pn ~ X, value = "mean") %>%
+  mutate(E=E - S, I = I - S, EI = EI - S) %>%
+  select(-S) %>%
+  group_by(pn) %>% 
+  select(pn, EI, E, I) %>%
+  transmute(EI = mean(EI), E = mean(E), I = mean(I))  %>% 
+  head(4) -> mi_stats
+
+mi_stats <- data.frame(mi_stats)  # strip off dplyr metadata otherwise below fails
+mi_stats <- melt(mi_stats, id=c('pn'), variable_name = 'model')
+mi_stats$pn <- as.factor(mi_stats$pn)
+f4a <- qplot(data=mi_stats, x=pn, y=value, facets = .~model, geom="bar", stat="identity") + 
+  theme_classic() +
+  ylab(expression(paste(Delta, "I"))) +
+  geom_hline(yintercept=0, color="grey") + 
+  xlab("p_PAC") +
+  theme(strip.background = element_blank())
+
+# --
+# PAC
+pac_exp70 %>% 
+  filter(N == 100, X %in% c("gain_p", "silenced_p", "summed_p", "stim_p")) %>%
+  droplevels() -> pac_fig3
+pac_fig3$X <- revalue(pac_fig3$X, c("gain_p"="EI", "summed_p"="E", "silenced_p"="I", "stim_p"="S"))
+
+pac_fig3 %>% 
+  group_by(Istim, g, X, pn) %>%
+  cast(Istim + g + pn ~ X, value = "mean") %>%
+  mutate(E=E - S, I = I - S, EI = EI - S) %>%
+  select(-S) %>%
+  group_by(pn) %>% 
+  select(pn, EI, E, I) %>%
+  transmute(EI = mean(EI), E = mean(E), I = mean(I))  %>% 
+  head(4) -> pac_stats
+
+pac_stats <- data.frame(pac_stats)  # strip off dplyr metadata otherwise below fails
+pac_stats <- melt(pac_stats, id=c('pn'), variable_name = 'model')
+pac_stats$pn <- as.factor(pac_stats$pn)
+
+f4b <- qplot(data=pac_stats, x=pn, y=value, facets = .~model, geom="bar", stat="identity") + 
+  theme_classic() +
+  ylab(expression(paste(Delta, "PAC"))) +
+  geom_hline(yintercept=0, color="grey") + 
+  xlab("p_PAC") +
+  theme(strip.background = element_blank())
+
+grid.arrange(f4a, f4b, nrow=2)
+pdf("/home//ejp/src/pacological/analysis/figures/sfig3.pdf", width = 5, height = 4)
+grid.arrange(f4a, f4b, nrow=2)
+dev.off()
+```
+
+## Demo S and PAC rates
+
+Used figures from this in Fig 2. Kept for history/repro.
+
+```{r pac_timecourse_a, eval=FALSE, fig.width=7, fig.height=5, echo=FALSE, warning=FALSE, message=FALSE}
+demopath <- "/home/ejp/src/pacological/data"
+rates <- c(2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30)
+ks <- c(0)
+
+demopath <- paste(demopath, "/demo_pac/", sep="")
+lfps <- load.demo(demopath, "lfps", rates, ks)
+
+sum_ex <- subset(lfps, (Iosc == 30) & (Istim == 20))
+p1 <- qplot(data=sum_ex[sum_ex < 1000,], x=X, y=summed_p, geom="line") + ylab("E") + xlab("") + theme_classic() + theme(axis.line=element_blank(),
+      axis.text.x=element_blank(),
+      axis.text.y=element_blank(),
+      axis.ticks=element_blank(),
+      axis.title.x=element_blank(),
+#       axis.title.y=element_blank(),
+      legend.position="none",
+      panel.background=element_blank(),
+      panel.border=element_blank(),
+      panel.grid.major=element_blank(),
+      panel.grid.minor=element_blank(),
+      plot.background=element_blank())
+
+gain_ex <- subset(lfps, (Iosc == 30) & (Istim == 10))
+p2 <- qplot(data=gain_ex[gain_ex < 1000,], x=X, y=gain_p, geom="line") + ylab("EI") + xlab("") + theme_classic() +
+  theme(axis.line=element_blank(),
+      axis.text.x=element_blank(),
+      axis.text.y=element_blank(),
+      axis.ticks=element_blank(),
+#       axis.title.x=element_blank(),
+#       axis.title.y=element_blank(),
+      legend.position="none",
+      panel.background=element_blank(),
+      panel.border=element_blank(),
+      panel.grid.major=element_blank(),
+      panel.grid.minor=element_blank(),
+      plot.background=element_blank())
+
+silenced_ex <- subset(lfps, (Iosc == 20) & (Istim == 24))
+p3 <- qplot(data=silenced_ex[silenced_ex < 1000,], x=X, y=silenced_p, geom="line") + ylab("I") + xlab("Time (ms)") +
+  theme(axis.line=element_blank(),
+#       axis.text.x=element_blank(),
+      axis.text.y=element_blank(),
+      axis.ticks.y=element_blank(),
+#       axis.title.x=element_blank(),
+#       axis.title.y=element_blank(),
+      legend.position="none",
+      panel.background=element_blank(),
+      panel.border=element_blank(),
+      panel.grid.major=element_blank(),
+      panel.grid.minor=element_blank(),
+      plot.background=element_blank())
+
+stim_ex <- subset(lfps, (Iosc == 20) & (Istim == 30))
+p4 <- qplot(data=silenced_ex[silenced_ex < 1000,], x=X, y=stim_p, geom="line") + ylab("S") + xlab("Time (ms)") + theme(axis.line=element_blank(),
+      axis.text.x=element_blank(),
+      axis.text.y=element_blank(),
+      axis.ticks=element_blank(),
+      axis.title.x=element_blank(),
+#       axis.title.y=element_blank(),
+      legend.position="none",
+      panel.background=element_blank(),
+      panel.border=element_blank(),
+      panel.grid.major=element_blank(),
+      panel.grid.minor=element_blank(),
+      plot.background=element_blank())
+grid.arrange(p4, p2, p1, p3, nrow=4)
+
+# Save
+pdf("/home//ejp/src/pacological/analysis/figures/fig1c.pdf", width = 4, height = 8)
+grid.arrange(p4, p2, p1, p3, nrow=4)
+dev.off()
+```
+
+
+## MI/H correlations
+
+TL;DR There are none for gain, positive corr for addition, and negative corr for subtraction
+
+```{r h_mi_a, eval=FALSE, fig.width=7, fig.height=5, echo=FALSE, warning=FALSE, message=FALSE}
+tmpdf <- data.frame(mi=(mi_exp70a$gain_p - mi_exp70a$stim_p), h=(h_exp70a$gain_p - h_exp70a$stim_p))
+tmpdf <- data.frame(mi=(mi_exp70a$gain_p), h=(h_exp70a$gain_p), g=mi_exp70a$g, Istim=mi_exp70a$Istim)
+f4b1 <- qplot(data=tmpdf, x=h, y=mi, geom="point", color=Istim) + 
+  ggtitle("EI") + theme_classic() +
+  ylab(expression(paste(Delta, "I"))) +
+  xlab(expression(paste(Delta, "H"))) +
+#   stat_smooth(method = "loess", formula = y ~ x) +
+  #xlim(0,1) +
+  geom_hline(yintercept=0, color="grey") 
+
+r_ei <- cor.test(tmpdf$h, tmpdf$mi, method = "spearman")
+
+qplot(data=tmpdf, x=Istim, y=mi)
+
+tmpdf <- data.frame(mi=(mi_exp70a$summed_p), h=(h_exp70a$summed_p))
+f4b2 <- qplot(data=tmpdf, x=h, y=mi, geom="point") + 
+  ggtitle("E") + 
+  theme_classic() + ylab("") +
+  xlab(expression(paste(Delta, "h"))) +
+  stat_smooth(method = "lm", formula = y ~ x) +
+  xlim(-1,1) +
+  geom_hline(yintercept=0, color="grey") 
+
+r_e <- cor.test(tmpdf$h, tmpdf$mi, method = "spearman")
+
+tmpdf <- data.frame(mi=(mi_exp70a$silenced_p), h=(h_exp70a$silenced_p))
+f4b3 <- qplot(data=tmpdf, x=h, y=mi, geom="point") + ggtitle("I") + 
+  theme_classic() + xlab("") + ylab("") +
+  stat_smooth(method = "lm", formula = y ~ x) +
+  xlim(-1,1) + 
+  geom_hline(yintercept=0, color="grey") 
+
+r_i <- cor.test(tmpdf$h, tmpdf$mi, method = "spearman")
+
+grid.arrange(f4b1, f4b2, f4b3, ncols=3)
+
+# Save
+pdf("/home//ejp/src/pacological/analysis/figures/fig3.pdf", width = 7.5, height = 4.5)
+grid.arrange(f4b1, f4b2, f4b3, ncols=3)
+dev.off()
+```

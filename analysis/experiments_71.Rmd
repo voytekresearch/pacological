@@ -1,0 +1,486 @@
+---
+title: "Experiments 71"
+author: "Erik J Peterson"
+date: "9-1-2015"
+output:
+  html_document:
+    number_sections: yes
+    theme: spacelab
+    toc: yes
+---
+
+
+# Exp 71
+
+Are replicates of exp60 except for,
+
+Phase in PAC (OZ) is take from the osc population.
+
+```{r helper_fns, echo=FALSE, fig.width=6, fig.height=4, echo=FALSE, warning=FALSE, message=FALSE}
+library(ggplot2)
+library(grid)
+library(gridExtra)
+library(plyr)
+library(dplyr)
+library(reshape)
+library(png)
+library(plyr)
+library(doParallel)
+library(tidyr)
+library(ggthemr)
+registerDoParallel(cores=10)
+
+path <- "/home/ejp/src/pacological/data"
+
+load.data <- function(path, type, rates, gs, Ns, pns){
+  df <- NULL
+  for(r_s in rates){
+    for(g in gs){
+      for(N in Ns){
+        for(pn in pns){
+          try({
+            name <- paste("Istim-", as.character(r_s), 
+                          "_g-", as.character(g),
+                          "_N-", as.character(N),
+                          "_pn-", as.character(pn),
+                          "__", as.character(type), 
+                          "_summary.csv", sep="")
+            di <- read.csv(paste(path, name, sep=""))
+            di["Istim"] <- rep(r_s, nrow(di))
+            di["g"] <- rep(g, nrow(di))
+            di["N"] <- rep(N, nrow(di))
+            di["pn"] <- rep(pn, nrow(di))
+            
+            df <- rbind(df, di)  
+          })  
+        }
+      }
+    }
+  }
+  df
+}
+
+load.all.data <- function(path, type, rates, gs, Ns, pns){
+  df <- NULL
+  for(r_s in rates){
+    for(g in gs){
+      for(N in Ns){
+        for(pn in pns){
+          try({
+            name <- paste("Istim-", as.character(r_s), 
+                          "_g-", as.character(g),
+                          "_N-", as.character(N),
+                          "_pn-", as.character(pn),
+                          "__", as.character(type), 
+                          ".csv", sep="")
+            di <- read.csv(paste(path, name, sep=""))
+            di["Istim"] <- rep(r_s, nrow(di))
+            di["g"] <- rep(g, nrow(di))
+            di["N"] <- rep(N, nrow(di))
+            di["pn"] <- rep(pn, nrow(di))
+            
+            df <- rbind(df, di)  
+          })  
+        }
+      }
+    }
+  }
+  df
+}
+
+load.demo <- function(path, type, rates, ks){
+  dexp <- NULL
+  for(r_o in rates){
+    for(r_s in rates){
+      for(k in ks){
+        try({
+          name <- paste("Iosc-", as.character(r_o), 
+                      "_Istim-", as.character(r_s), 
+                      "_k", as.character(k), 
+                      "_", as.character(type), 
+                      ".csv", sep="")
+          di <- read.csv(paste(path, name, sep=""))
+          di["Iosc"] <- rep(r_o, nrow(di))
+          di["Istim"] <- rep(r_s, nrow(di))
+          di["k"] <- rep(k, nrow(di))
+          
+          dexp <- rbind(dexp, di)  
+       })
+      }
+    }
+  }
+dexp
+}
+
+
+load.demo2 <- function(path, type, rates, gs, Ns, pns){
+  df <- NULL
+  for(r_s in rates){
+    for(g in gs){
+      for(N in Ns){
+        for(pn in pns){
+          try({
+            name <- paste("Istim-", as.character(r_s), 
+                          "_g-", as.character(g),
+                          "_N-", as.character(N),
+                          "_pn-", as.character(pn),
+                          "__", as.character(type), 
+                          ".csv", sep="")
+            di <- read.csv(paste(path, name, sep=""))
+            di["Istim"] <- rep(r_s, nrow(di))
+            di["g"] <- rep(g, nrow(di))
+            di["N"] <- rep(N, nrow(di))
+            di["pn"] <- rep(pn, nrow(di))
+            
+            df <- rbind(df, di)  
+          })  
+        }
+      }
+    }
+  }
+  df
+}
+
+pprime <- function(r1, r2, v1, v2){
+  (r2 - r1) / sqrt((v1 + v2) / 2)
+}
+```
+
+```{r load71, echo=FALSE, warning=FALSE, message=FALSE}
+rates <- c(2, 6, 10, 14, 18, 22, 26, 30)
+gs <- c(1,2,3,4,5,6,7,8)
+Ns <- c(100, 200, 300, 400, 500, 600, 700, 800, 900, 1000)
+pns <- c(1)
+
+exp71path <- paste(path, "/exp71/", sep="")
+mi_exp71 <- load.data(exp71path, "MI", rates, gs, Ns, pns)
+h_exp71 <- load.data(exp71path, "H", rates, gs, Ns, pns)
+pac_exp71 <- load.data(exp71path, "PAC", rates, gs, Ns, pns)
+```
+
+```{r fig171, fig.width=6, fig.height=4, echo=FALSE, warning=FALSE, message=FALSE}
+# -- MI
+# Sel N and p
+mi_fig71 <- filter(mi_exp71, N == 100, pn == 1.00)
+
+# Get Avg MI for stim
+Mstim <- mean((filter(mi_fig71, X == "stim_p"))$mean)
+mi_fig71$mean <- mi_fig71$mean - Mstim
+
+# Select, rename, and order 'em
+mi_fig71 <- filter(mi_fig71, X %in% c("gain_p", "silenced_p", "summed_p"))
+mi_fig71$X <- revalue(mi_fig71$X, c("gain_p"="EI", "summed_p"="E", "silenced_p"="I"))
+mi_fig71$X <- factor(mi_fig71$X, levels=c("EI", "E", "I")) 
+
+# Sum and plot
+mi_stats <- group_by(mi_fig71, X)
+mi_stats <- summarise(mi_stats, M=mean(mean), SD=sd(mean))
+limits <- aes(ymax = M + SD, ymin=M - SD)
+
+f71a <- qplot(data=mi_stats, x=X, y=M, geom="bar", stat="identity", width=.75) + geom_errorbar(limits, width=0.2, color="grey") + ylab(expression(paste(Delta, "MI"))) + theme_bw() + geom_hline(yintercept=0, color="grey") + xlab("") + ggtitle("Exp 59") 
+
+# 2B, Series
+mi_exp71 %>% 
+  filter(N == 100, pn == 1.00, X %in% c("gain_p", "silenced_p", "summed_p", "stim_p")) %>%
+  droplevels() -> mi_fig71b
+
+mi_fig71b$X <- revalue(mi_fig71b$X, c("gain_p"="EI", "summed_p"="E", "silenced_p"="I", "stim_p"="S"))
+
+# Get subtract mean I_stim
+mi_fig71b %>% select(mean, Istim, g, X) %>% 
+  group_by(Istim, g, X) %>%
+  cast(Istim + g ~ X, value = "mean") %>%
+  mutate(E=E - S, I = I - S, EI = EI - S) %>%
+  select(-S) %>% 
+  melt(id=c('Istim', 'g'), variable_name = 'model') -> mi_stats
+
+mi_stats$model <- revalue(mi_stats$model, c("EI"="EI"))
+mi_stats$model <- factor(mi_stats$model, levels=c("EI", "E", "I"))
+
+f71b <- qplot(data=mi_stats, x=Istim, y=value, facets=.~model, color=g, geom="line", group=g) + 
+  theme_bw() + 
+  xlim(0,30) + 
+  ylab(expression(paste(Delta, "MI"))) +
+  geom_hline(yintercept=0, color="grey") + 
+  xlab(expression(r[s])) +
+  theme(strip.background = element_blank(), axis.title.x = element_text(colour = "red")) +
+  ggtitle("Exp 71")
+print(f71b)
+```
+
+```{r fig271, fig.width=10, fig.height=2, echo=FALSE, warning=FALSE, message=FALSE}
+# -- PAC
+# -- MI
+# Sel N and p
+pac_fig71 <- filter(pac_exp71, N == 100, pn == 1.00)
+
+# Select, rename, and order 'em
+pac_fig71 <- filter(pac_fig71, X %in% c("gain_p", "silenced_p", "summed_p", "stim_p"))
+pac_fig71$X <- revalue(pac_fig71$X, c("gain_p"="EI", "summed_p"="E", "silenced_p"="I", "stim_p"="S"))
+pac_fig71$X <- factor(pac_fig71$X, levels=c("S", "EI", "E", "I")) 
+
+# Sum and plot
+pac_fig71 %>% group_by(X) %>% summarise(M=mean(mean), SD=sd(mean)) -> pac_stats
+limits <- aes(ymax = M + SD, ymin=M - SD)
+
+f71a <- qplot(data=pac_stats, x=X, y=M, geom="bar", stat="identity", width=.75) + 
+  geom_errorbar(limits, width=0.2, color="grey") + 
+  ylab("SC") + theme_bw() + 
+  geom_hline(yintercept=0, color="grey") + 
+  xlab("")
+
+# -------
+# 3B, Series
+pac_exp71 %>% 
+  filter(N == 100, pn == 1.00, X %in% c("gain_p", "silenced_p", "summed_p", "stim_p")) %>%
+  droplevels()  %>% select(X, mean, std, Istim, g, N, pn) -> pac_fig71b
+
+pac_fig71b$X <- revalue(pac_fig71b$X, c("gain_p"="EI", "summed_p"="E", "silenced_p"="I", "stim_p"="S"))
+pac_fig71b$X <- factor(pac_fig71b$X, levels=c("S", "EI", "E", "I"))
+f71b0 <- qplot(data=pac_fig71b, x=Istim, y=mean, facets=.~X, color=g, geom="line", group=g) + 
+  theme_bw() + 
+  xlim(0,30) + 
+  ylab("SC") +
+  geom_hline(yintercept=0, color="grey") + 
+  xlab(expression(r[s])) +
+  theme(strip.background = element_blank(), axis.title.x = element_text(colour = "red"))
+
+layoutm <- rbind(
+    c(1, 1, 2, 2, 2, 2)
+  )
+grid.arrange(f71a, f71b0, layout_matrix=layoutm)
+```
+
+# Var and rate
+
+## Var
+
+```{r fig.width=16, fig.height=16, echo=FALSE, warning=FALSE, message=FALSE}
+exp71path <- paste(path, "/exp71/", sep="")
+vars_exp71 <- load.demo2(exp71path, "vars", rates, gs, Ns, pns)
+vars_exp71 %>% 
+  select(times=X, Istim, g, N, S=stim_p, Ssp=stim_sp, EI=gain_p, I=silenced_p, E=summed_p) -> 
+  vars_exp71
+
+mvars <- melt(vars_exp71, id.vars = c("times", "Istim", "g", "N"))
+
+
+ggplot(data=mvars, aes(x=factor(N), y=value)) + 
+  facet_grid(g~variable) + 
+  geom_boxplot() + 
+  theme_bw() + 
+  scale_y_log10() +
+  ylab("Var")
+
+ggplot(data=filter(mvars, times < 300, Istim == 14), aes(x=times, y=value, color=variable)) + 
+  geom_point() + 
+  facet_grid(g~N) + 
+  theme_bw() + 
+  scale_y_log10()
+
+ggplot(data=filter(mvars, times < 300, g == 4), aes(x=times, y=value, color=variable)) + 
+  geom_point() + 
+  facet_grid(Istim~N) + 
+  theme_bw() + 
+  scale_y_log10()
+```
+
+## Rates
+
+```{r fig.width=16, fig.height=16, echo=FALSE, warning=FALSE, message=FALSE}
+exp71path <- paste(path, "/exp71/", sep="")
+poprates_exp71 <- load.demo2(exp71path, "poprates", rates, gs, Ns, pns)
+poprates_exp71 %>% 
+  select(times=X, Istim, g, N, S=stim_p, Ssp=stim_sp, EI=gain_p, I=silenced_p, E=summed_p) -> 
+  poprates_exp71
+
+mpoprates <- melt(poprates_exp71, id.var = c("times", "Istim", "g", "N"))
+
+
+ggplot(data=mpoprates, aes(x=factor(N), y=value)) + 
+  facet_grid(g~variable) + 
+  geom_boxplot() + 
+  theme_bw() + 
+  scale_y_log10() +
+  ylab("Rate")
+
+ggplot(data=filter(mpoprates, times < 300, Istim == 14), aes(x=times, y=value, color=variable)) + 
+  geom_point() + 
+  facet_grid(g~N) + 
+  theme_bw() + 
+  scale_y_log10()
+
+ggplot(data=filter(mpoprates, times < 300, g == 4), aes(x=times, y=value, color=variable)) + 
+  geom_point() + 
+  facet_grid(Istim~N) + 
+  theme_bw() + 
+  scale_y_log10()
+```
+
+* Neither `vars` nor `poprates` obviously explain `gain`s MI facilitation.
+
+
+# Correlate MI/var and MI/rate
+
+```{r fig.width=16, fig.height=16, echo=FALSE, warning=FALSE, message=FALSE}
+# Select and name MI
+mi_exp71 %>%
+  filter(pn == 1) %>%
+  select(X, mean, Istim, g, N) %>% 
+  cast(Istim + g + N ~ X, value = "mean")  %>% 
+  select(Istim, g, N, S=stim_p, EI=gain_p, E=summed_p, I=silenced_p) %>%
+  arrange(Istim, g, N) ->
+  mi_exp71_stats
+
+# Avg var
+vars_exp71 %>% 
+  group_by(Istim, g, N) %>% 
+  summarise(S=mean(S), EI=mean(EI), E=mean(E), I=mean(I)) %>%
+  arrange(Istim, g, N) ->
+  vars_exp71_stats
+
+# Avg poprates
+poprates_exp71 %>% 
+  group_by(Istim, g, N) %>% 
+  summarise(S=mean(S), EI=mean(EI), E=mean(E), I=mean(I)) %>%
+  arrange(Istim, g, N) ->
+  poprates_exp71_stats
+```
+
+Correlation between MI and var
+
+```{r}
+cor.test(mi_exp71_stats$EI, vars_exp71_stats$EI, method = "spearman")
+cor.test(mi_exp71_stats$E, vars_exp71_stats$E, method = "spearman")
+cor.test(mi_exp71_stats$I, vars_exp71_stats$I, method = "spearman")
+```
+
+Correlation between MI and rates
+
+```{r}
+cor.test(mi_exp71_stats$EI, poprates_exp71_stats$EI, method = "spearman")
+cor.test(mi_exp71_stats$E, poprates_exp71_stats$E, method = "spearman")
+cor.test(mi_exp71_stats$I, poprates_exp71_stats$I, method = "spearman")
+```
+
+* `poprate` explains more variance in MI than `var`. 
+* All Spearman's are significant (large N). 
+
+
+## d' and the models
+
+```{r dprime, fig.width=16, fig.height=16, echo=FALSE, warning=FALSE, message=FALSE}
+# Converto mean
+poprates_exp71 %>%
+  group_by(N) %>%
+  mutate(S = as.numeric(S) / N[1], 
+         Ssp = as.numeric(Ssp) / N[1], 
+         EI=as.numeric(EI) / N[1], 
+         E=as.numeric(E) / N[1], 
+         I=as.numeric(I) / N[1]) -> popmeans_exp71
+
+# Join M and SD
+popmeans_exp71$stat <- rep("M", nrow(popmeans_exp71))
+vars_exp71$stat <- rep("SD", nrow(vars_exp71))
+exp71 <- rbind(popmeans_exp71,vars_exp71)
+
+exp71 %>%
+  filter(times < 500) %>%
+  ddply(c("times", "Istim", "g", "N"), .parallel=TRUE, .fun=function(df){
+    m <- filter(df, stat == "M")
+    s_d <- filter(df, stat == "SD")
+    EI <- pprime(m[['S']], m[['EI']], s_d[['S']], s_d[['EI']])
+    E <- pprime(m[['S']], m[['E']], s_d[['S']], s_d[['E']])
+    I <- pprime(m[['S']], m[['I']], s_d[['S']], s_d[['I']])
+    ddf <- cbind(EI, E, I)
+    ddf[is.nan(ddf)] <- 0
+    data.frame(ddf)
+  }) -> prime_exp71
+
+prime_exp71 %>%
+  gather(pop, dprime, EI, E, I) %>%
+  ggplot(aes(x=N, y=dprime, color=pop)) +
+#   geom_point() + 
+  stat_summary(fun.data = "mean_cl_boot") +
+  facet_grid(g~Istim) + 
+  theme_bw()
+
+prime_exp71 %>%
+  gather(pop, dprime, EI, E, I) %>%
+  ggplot(aes(x=Istim, y=dprime, color=g, group=g)) +
+#   geom_point() + 
+  stat_summary(fun.data = "mean_cl_boot") +
+  facet_grid(N~pop) + 
+  theme_bw()
+```
+
+* `dprime` _does_ track MI (ignoring `N`), but
+* `N` doesn't do anything.
+* The total MI effect has two parts? Gain as `dprime`, and what ever `N` does?
+* `N` does?
+
+```{r fb}
+r_s <- 10
+r_o <- 2
+g <- 2
+
+d_s <- data.frame(S=rpois(1000, r_s))
+d_e <- cbind(d_s, data.frame(E=rpois(100, r_s + g * r_o)))
+d_i <- cbind(d_s, data.frame(I=rpois(100, r_s - g * r_o)))
+d_ei <- cbind(d_s, data.frame(EI=rpois(100, r_s * g * r_o)))
+
+fb1 <- ggplot(data=gather(d_ei, 'pop', x, S, EI), aes(x=x, fill=pop, color=pop)) + 
+  geom_density(alpha=0.5, adjust=2) +
+  scale_colour_manual(values = c("grey", "black")) + 
+  scale_fill_manual(values = c("grey", "black")) + 
+  theme_bw() + 
+  xlim(0,80) +
+  xlab("") +
+  ylab("") +
+  ggtitle("Gain multiplication increases signal discrimation\nEI") +
+  theme(legend.position="none")
+
+fb2 <- ggplot(data=gather(d_e, 'pop', x, S, E), aes(x=x, fill=pop, color=pop)) + 
+  geom_density(alpha=0.5, adjust=2) +
+  scale_colour_manual(values = c("grey", "black")) + 
+  scale_fill_manual(values = c("grey", "black")) + 
+  theme_bw() + 
+  xlab("") +
+  xlim(0,80) +
+  ylab("Density (AU)") +
+  ggtitle("\nE") +
+  theme(legend.position="none")
+
+fb3 <- ggplot(data=gather(d_i, 'pop', x, S, I), aes(x=x, fill=pop, color=pop)) + 
+  geom_density(alpha=0.5, adjust=2) +
+  scale_colour_manual(values = c("grey", "black")) + 
+  scale_fill_manual(values = c("grey", "black")) + 
+  theme_bw() + 
+  xlab(expression(r)) +
+  xlim(0,80) +
+  ylab("") +
+  ggtitle("\nI") +
+  theme(legend.position="none")
+
+fc1 <- prime_exp71 %>%
+  gather(pop, dprime, EI, E, I) %>%
+  filter(N == 100) %>%
+  ggplot(aes(x=Istim, y=dprime, color=g, group=g)) +
+  stat_summary(fun.data = "mean_cl_boot") +
+  facet_grid(.~pop) + 
+  ylab("d'") +
+  geom_hline(yintercept=0, color="grey") +
+  theme_bw() + 
+  xlab(expression(r[s])) +
+  theme(strip.background = element_blank(), axis.title.x = element_text(colour = "red"))
+
+layout <- rbind(
+    c(1, 1, 1),
+    c(2, 2, 2),
+    c(3, 3, 3),
+    c(4, 4, 4),
+    c(4, 4, 4)
+  )
+grid.arrange(fb1, fb2, fb3, fc1, layout_matrix=layout)
+
+```

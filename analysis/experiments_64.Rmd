@@ -1,0 +1,197 @@
+---
+title: "Experiment 64"
+author: "Erik J Peterson"
+date: "9-4-2015"
+output:
+  html_document:
+    number_sections: yes
+    theme: spacelab
+    toc: yes
+---
+
+# Exp 64
+
+Are replicates of exp57 except for,
+
+- Try and ensure the PLV/MI results in exp57 are not an artifact of LFP convolution. Replace double exponential LFP estimation with summed rates.
+
+
+```{r helper_fns, echo=FALSE, fig.width=6, fig.height=4, echo=FALSE, warning=FALSE, message=FALSE}
+library(ggplot2)
+library(grid)
+library(gridExtra)
+library(plyr)
+library(dplyr)
+library(reshape)
+library(png)
+
+path <- "/home/ejp/src/pacological/data"
+
+load.data <- function(path, type, rates, gs, Ns, pns){
+  df <- NULL
+  for(r_s in rates){
+    for(g in gs){
+      for(N in Ns){
+        for(pn in pns){
+          try({
+            name <- paste("Istim-", as.character(r_s), 
+                          "_g-", as.character(g),
+                          "_N-", as.character(N),
+                          "_pn-", as.character(pn),
+                          "__", as.character(type), 
+                          "_summary.csv", sep="")
+            di <- read.csv(paste(path, name, sep=""))
+            di["Istim"] <- rep(r_s, nrow(di))
+            di["g"] <- rep(g, nrow(di))
+            di["N"] <- rep(N, nrow(di))
+            di["pn"] <- rep(pn, nrow(di))
+            
+            df <- rbind(df, di)  
+          })  
+        }
+      }
+    }
+  }
+  df
+}
+
+load.all.data <- function(path, type, rates, gs, Ns, pns){
+  df <- NULL
+  for(r_s in rates){
+    for(g in gs){
+      for(N in Ns){
+        for(pn in pns){
+          try({
+            name <- paste("Istim-", as.character(r_s), 
+                          "_g-", as.character(g),
+                          "_N-", as.character(N),
+                          "_pn-", as.character(pn),
+                          "__", as.character(type), 
+                          ".csv", sep="")
+            di <- read.csv(paste(path, name, sep=""))
+            di["Istim"] <- rep(r_s, nrow(di))
+            di["g"] <- rep(g, nrow(di))
+            di["N"] <- rep(N, nrow(di))
+            di["pn"] <- rep(pn, nrow(di))
+            
+            df <- rbind(df, di)  
+          })  
+        }
+      }
+    }
+  }
+  df
+}
+
+load.demo <- function(path, type, rates, ks){
+  dexp <- NULL
+  for(r_o in rates){
+    for(r_s in rates){
+      for(k in ks){
+        try({
+          name <- paste("Iosc-", as.character(r_o), 
+                      "_Istim-", as.character(r_s), 
+                      "_k", as.character(k), 
+                      "_", as.character(type), 
+                      ".csv", sep="")
+          di <- read.csv(paste(path, name, sep=""))
+          di["Iosc"] <- rep(r_o, nrow(di))
+          di["Istim"] <- rep(r_s, nrow(di))
+          di["k"] <- rep(k, nrow(di))
+          
+          dexp <- rbind(dexp, di)  
+       })
+      }
+    }
+  }
+dexp
+}
+
+
+load.demo2 <- function(path, type, rates, gs, Ns, pns){
+  df <- NULL
+  for(r_s in rates){
+    for(g in gs){
+      for(N in Ns){
+        for(pn in pns){
+          try({
+            name <- paste("Istim-", as.character(r_s), 
+                          "_g-", as.character(g),
+                          "_N-", as.character(N),
+                          "_pn-", as.character(pn),
+                          "_", as.character(type), 
+                          ".csv", sep="")
+            di <- read.csv(paste(path, name, sep=""))
+            di["Istim"] <- rep(r_s, nrow(di))
+            di["g"] <- rep(g, nrow(di))
+            di["N"] <- rep(N, nrow(di))
+            di["pn"] <- rep(pn, nrow(di))
+            
+            df <- rbind(df, di)  
+          })  
+        }
+      }
+    }
+  }
+  df
+}
+```
+
+
+```{r load64, echo=FALSE, warning=FALSE, message=FALSE}
+rates <- c(2, 6, 10, 14, 18, 22, 26, 30)
+gs <- c(1,2,3,4,5,6,7,8)
+Ns <- c(100, 200, 300, 400, 500)
+pns <- c(0.25, 0.5, 0.75, 1)
+
+exp64path <- paste(path, "/exp64/", sep="")
+mi_exp64 <- load.data(exp64path, "MI", rates, gs, Ns, pns)
+h_exp64 <- load.data(exp64path, "H", rates, gs, Ns, pns)
+pac_exp64 <- load.data(exp64path, "PAC", rates, gs, Ns, pns)
+```
+
+```{r fig64, fig.width=9, fig.height=2, echo=FALSE, warning=FALSE, message=FALSE}
+# -- PAC
+# -- MI
+# Sel N and p
+pac_fig64 <- filter(pac_exp64, N == 100, pn == 1.00)
+
+# Select, rename, and order 'em
+pac_fig64 <- filter(pac_fig64, X %in% c("gain_p", "silenced_p", "summed_p", "stim_p"))
+pac_fig64$X <- revalue(pac_fig64$X, c("gain_p"="EI", "summed_p"="E", "silenced_p"="I", "stim_p"="S"))
+pac_fig64$X <- factor(pac_fig64$X, levels=c("S", "EI", "E", "I")) 
+
+# Sum and plot
+pac_fig64 %>% group_by(X) %>% summarise(M=mean(mean), SD=sd(mean)) -> pac_stats
+limits <- aes(ymax = M + SD, ymin=M - SD)
+
+f64a <- qplot(data=pac_stats, x=X, y=M, geom="bar", stat="identity", width=.75) + 
+  geom_errorbar(limits, width=0.2, color="grey") + 
+  ylab("PLV") + theme_bw() + 
+  geom_hline(yintercept=0, color="grey") + 
+  xlab("")
+
+# -------
+# 3B, Series
+pac_exp64 %>% 
+  filter(N == 100, pn == 1.00, X %in% c("gain_p", "silenced_p", "summed_p", "stim_p")) %>%
+  droplevels()  %>% select(X, mean, std, Istim, g, N, pn) -> pac_fig64b
+
+pac_fig64b$X <- revalue(pac_fig64b$X, c("gain_p"="EI", "summed_p"="E", "silenced_p"="I", "stim_p"="S"))
+pac_fig64b$X <- factor(pac_fig64b$X, levels=c("S", "EI", "E", "I"))
+f64b0 <- qplot(data=pac_fig64b, x=Istim, y=mean, facets=.~X, color=g, geom="line", group=g) + 
+  theme_bw() + 
+  xlim(0,30) + 
+  ylab("PLV") +
+  geom_hline(yintercept=0, color="grey") + 
+  xlab(expression(r[s])) +
+  theme(strip.background = element_blank(), axis.title.x = element_text(colour = "red"))
+
+layoutm <- rbind(
+    c(1, 1, 2, 2, 2, 2)
+  )
+grid.arrange(f64a, f64b0, layout_matrix=layoutm)
+```
+
+* PLV estimates with summed rates are identical.
+

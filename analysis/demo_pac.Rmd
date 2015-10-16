@@ -61,16 +61,66 @@ Plot some example timecourse and PSDSs.
 
 ```{r three_pacs}
 sum_ex <- subset(lfps, (Iosc == 30) & (Istim == 20))
-p1 <- qplot(data=sum_ex[sum_ex < 1000,], x=X, y=summed_p, geom="line") + theme_bw() + ylab("Additive PAC") + xlab("")
+p1 <- qplot(data=sum_ex[sum_ex < 1000,], x=X, y=summed_p, geom="line") + ylab("E") + xlab("") + theme_bw() + theme(axis.line=element_blank(),
+      axis.text.x=element_blank(),
+      axis.text.y=element_blank(),
+      axis.ticks=element_blank(),
+      axis.title.x=element_blank(),
+#       axis.title.y=element_blank(),
+      legend.position="none",
+      panel.background=element_blank(),
+      panel.border=element_blank(),
+      panel.grid.major=element_blank(),
+      panel.grid.minor=element_blank(),
+      plot.background=element_blank())
 
 gain_ex <- subset(lfps, (Iosc == 30) & (Istim == 10))
-p2 <- qplot(data=gain_ex[gain_ex < 1000,], x=X, y=gain_p, geom="line") + theme_bw() + ylab("Gain PAC") + xlab("")
+p2 <- qplot(data=gain_ex[gain_ex < 1000,], x=X, y=gain_p, geom="line") + ylab("E+I") + xlab("") + theme_bw() +
+  theme(axis.line=element_blank(),
+      axis.text.x=element_blank(),
+      axis.text.y=element_blank(),
+      axis.ticks=element_blank(),
+#       axis.title.x=element_blank(),
+#       axis.title.y=element_blank(),
+      legend.position="none",
+      panel.background=element_blank(),
+      panel.border=element_blank(),
+      panel.grid.major=element_blank(),
+      panel.grid.minor=element_blank(),
+      plot.background=element_blank())
 
-silenced_ex <- subset(lfps, (Iosc == 20) & (Istim == 30))
-p3 <- qplot(data=silenced_ex[silenced_ex < 1000,], x=X, y=silenced_p, geom="line") + theme_bw() + ylab("Subtractive PAC") + xlab("Time (ms)")
+silenced_ex <- subset(lfps, (Iosc == 20) & (Istim == 24))
+p3 <- qplot(data=silenced_ex[silenced_ex < 1000,], x=X, y=silenced_p, geom="line") + ylab("I") + xlab("Time (ms)") +
+  theme(axis.line=element_blank(),
+#       axis.text.x=element_blank(),
+      axis.text.y=element_blank(),
+      axis.ticks.y=element_blank(),
+#       axis.title.x=element_blank(),
+#       axis.title.y=element_blank(),
+      legend.position="none",
+      panel.background=element_blank(),
+      panel.border=element_blank(),
+      panel.grid.major=element_blank(),
+      panel.grid.minor=element_blank(),
+      plot.background=element_blank())
 
-grid.arrange(p1, p2, p3, nrow=3)
+stim_ex <- subset(lfps, (Iosc == 20) & (Istim == 30))
+p4 <- qplot(data=silenced_ex[silenced_ex < 1000,], x=X, y=stim_p, geom="line") + ylab("S") + xlab("Time (ms)") + theme(axis.line=element_blank(),
+      axis.text.x=element_blank(),
+      axis.text.y=element_blank(),
+      axis.ticks=element_blank(),
+      axis.title.x=element_blank(),
+#       axis.title.y=element_blank(),
+      legend.position="none",
+      panel.background=element_blank(),
+      panel.border=element_blank(),
+      panel.grid.major=element_blank(),
+      panel.grid.minor=element_blank(),
+      plot.background=element_blank())
 
+grid.arrange(p4, p2, p1, p3, nrow=4)
+
+# --
 sum_psd <- pspectrum(sum_ex$summed_p, x.frqsamp=1000)
 gain_psd <- pspectrum(gain_ex$gain_p, x.frqsamp=1000)
 sil_psd <- pspectrum(silenced_ex$silenced_p, x.frqsamp=1000)

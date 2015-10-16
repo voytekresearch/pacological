@@ -3,6 +3,11 @@ demo:
 	-rm data/demo/*
 	nice -19 python exp/demo.py data/demo
 
+demo2:
+	-mkdir data/demo2
+	-rm data/demo2/*
+	nice -19 python exp/demo_pac2.py data/demo2
+
 # I and O rates
 exp1:
 	-mkdir data/exp1
@@ -271,6 +276,104 @@ exp57:
 	-mkdir data/exp57
 	-rm data/exp57/*
 	nice -19 python exp/exp57.py data/exp57/
+
+# back_type = stim
+# Ipri = 0.5
+exp58:
+	-mkdir data/exp58
+	-rm data/exp58/*
+	nice -19 python exp/exp58.py data/exp58/
+
+# back_type = stim
+# m = 4
+exp59:
+	-mkdir data/exp59
+	-rm data/exp59/*
+	nice -19 python exp/exp59.py data/exp59/
+
+# Try Ozkurt for 
+# back_type = stim
+exp60:
+	-mkdir data/exp60
+	-rm data/exp60/*
+	nice -19 python exp/exp60.py data/exp60/
+
+
+# Try f = 20 for beta gamma pac (exp57 base)
+# back_type = stim
+exp61:
+	-mkdir data/exp61
+	-rm data/exp61/*
+	nice -19 python exp/exp61.py data/exp61/
+
+# Try a mixture of stong gain (fix at 8) and add/sub
+# PAC. May be a useful fig for the dicussion/supp
+exp62:
+	-mkdir data/exp62
+	-rm data/exp62/*
+	nice -19 python exp/exp62.py data/exp62/
+
+# Uses LFP to do MI calculations. Repeat of exp57.
+exp63:
+	-mkdir data/exp63
+	-rm data/exp63/*
+	nice -19 python exp/exp63.py data/exp63/
+
+# Replace exp based LFP with simple sum of 
+# of spiking to make the LFP. Ensure the PLV/OZ
+# pattern is not somehow an artfact of the
+# exp convolution.
+exp64:
+	-mkdir data/exp64
+	-rm data/exp64/*
+	nice -19 python exp/exp64.py data/exp64/
+
+# Try a mixture of stong gain (fix at 2) and add/sub
+# PAC. May be a useful fig for the dicussion/supp
+exp65:
+	-mkdir data/exp65
+	-rm data/exp65/*
+	nice -19 python exp/exp65.py data/exp65/
+
+# Same as 65 but gmult=4
+exp66:
+	-mkdir data/exp66
+	-rm data/exp66/*
+	nice -19 python exp/exp66.py data/exp66/
+
+# Same as 65 but gmult is reset to g, but still
+# subtracting from 'gain' instead of 'stim'.
+exp67:
+	-mkdir data/exp67
+	-rm data/exp67/*
+	nice -19 python exp/exp67.py data/exp67/
+
+# Same as 67 but control with m = 30
+exp68:
+	-mkdir data/exp68
+	-rm data/exp68/*
+	nice -19 python exp/exp68.py data/exp68/
+
+# Same as 67 but E+I injection is constant not sin
+exp69:
+	-mkdir data/exp69
+	-rm data/exp69/*
+	nice -19 python exp/exp69.py data/exp69/
+
+# Variation of exp57, but the low part of PAC
+# (OZ) is done with osc not the pac pop firing
+exp70:
+	-mkdir data/exp70
+	-rm data/exp70/*
+	nice -19 python exp/exp70.py data/exp70/
+
+# Variation of 70, saving the spike variances
+exp71:
+	-mkdir data/exp71
+	-rm data/exp71/*
+	nice -19 python exp/exp71.py data/exp71/
+
+# Variation of exp57 where coupling is via softmax(g)
 
 # ========================================================================
 # # Binary

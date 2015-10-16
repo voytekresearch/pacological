@@ -20,7 +20,6 @@ library(png)
 library(psd)
 library(tidyr)
 library(doParallel)
-library(bspec)
 registerDoParallel(cores=10)
 
 path <- "/home/ejp/src/pacological/data"
@@ -168,7 +167,7 @@ pprime <- function(r1, r2, v1, v2){
 ```
 
 
-```{r fig1_load, echo=FALSE, warning=FALSE, message=FALSE}
+```{r load, echo=FALSE, warning=FALSE, message=FALSE}
 rates <- c(2, 6, 10, 14, 18, 22, 26, 30)
 gs <- c(1,2,3,4,5,6,7,8)
 Ns <- c(100, 200, 300, 400, 500)
@@ -186,11 +185,7 @@ pac_exp70 <- load.data(exp70path, "PAC", rates, gs, Ns, pns)
 
 
 ```{r fig1, fig.width=8, fig.height=5, echo=FALSE, warning=FALSE, message=FALSE}
-# --
-# A ,B, C is PNG art
-
-# --
-# Preprocess D
+# -- MI
 # Sel N and p
 mi_fig1 <- filter(mi_exp70, N == 100, pn == 1.00)
 
@@ -203,26 +198,18 @@ mi_fig1 <- filter(mi_fig1, X %in% c("gain_p", "silenced_p", "summed_p"))
 mi_fig1$X <- revalue(mi_fig1$X, c("gain_p"="EI", "summed_p"="E", "silenced_p"="I"))
 mi_fig1$X <- factor(mi_fig1$X, levels=c("EI", "E", "I")) 
 
-# Make summary stats
+# Sum and plot
 mi_stats <- group_by(mi_fig1, X)
 mi_stats <- summarise(mi_stats, M=mean(mean), SD=sd(mean))
 limits <- aes(ymax = M + SD, ymin=M - SD)
 
-# --
-# Plot D
-f1a <- qplot(data=mi_stats, x=X, y=M, geom="bar", stat="identity", width=.75) + 
-  geom_errorbar(limits, width=0.2, color="grey") + 
-  ylab(expression(paste(Delta, "MI (bits)"))) + 
-  theme_classic() + 
-  geom_hline(yintercept=0, color="grey") + xlab("")
+f2a <- qplot(data=mi_stats, x=X, y=M, geom="bar", stat="identity", width=.75) + geom_errorbar(limits, width=0.2, color="grey") + ylab(expression(paste(Delta, "MI"))) + theme_classic() + geom_hline(yintercept=0, color="grey") + xlab("")
 
 
-# --
-# Preprocess E
+# 2B, Series
 mi_exp70 %>% 
   filter(N == 100, pn == 1.00, X %in% c("gain_p", "silenced_p", "summed_p", "stim_p")) %>%
-  droplevels() -> 
-  mi_fig1b
+  droplevels() -> mi_fig1b
 
 mi_fig1b$X <- revalue(mi_fig1b$X, c("gain_p"="EI", "summed_p"="E", "silenced_p"="I", "stim_p"="S"))
 
@@ -237,50 +224,39 @@ mi_fig1b %>% select(mean, Istim, g, X) %>%
 mi_stats$model <- revalue(mi_stats$model, c("EI"="EI"))
 mi_stats$model <- factor(mi_stats$model, levels=c("EI", "E", "I"))
 
-# --
-# Plot E
-f1b <- qplot(data=mi_stats, x=Istim, y=value, facets=.~model, color=g, geom="line", group=g) + 
+f2b <- qplot(data=mi_stats, x=Istim, y=value, facets=.~model, color=g, geom="line", group=g) + 
   theme_classic() + 
   xlim(0,30) + 
-  ylab(expression(paste(Delta, "MI (bits)"))) +
+  ylab(expression(paste(Delta, "MI"))) +
   geom_hline(yintercept=0, color="grey") + 
   xlab(expression(r[s])) +
   theme(strip.background = element_blank(), axis.title.x = element_text(colour = "red")) 
 # print(f2b)
 
-# --
-# Load A, B, C art
 img1 <- readPNG("/home/ejp/src/pacological/analysis/figures/neural_add.png")
 g1 <- rasterGrob(img1, interpolate=TRUE)
 
 img2 <- readPNG("/home/ejp/src/pacological/analysis/figures/pac_circuits.png")
 g2 <- rasterGrob(img2, interpolate=TRUE)
 
-# --
-# Assemble Fig 1
-pdf("/home//ejp/src/pacological/analysis/figures/fig1.pdf", width = 9.5, height = 4.5)
 layout <- rbind(
     c(4, 4, 2, 2, 2, 2, 2, 2),
     c(4, 4, 1, 1, 3, 3, 3, 3)
   )
-grid.arrange(f1a, g2, f1b, g1, layout_matrix=layout)
-dev.off()
+grid.arrange(f2a, g2, f2b, g1, layout_matrix=layout)
 
-png("/home//ejp/src/pacological/analysis/figures/fig1.png", width = 684, height = 324)
-layout <- rbind(
-    c(4, 4, 2, 2, 2, 2, 2, 2),
-    c(4, 4, 1, 1, 3, 3, 3, 3)
-  )
-grid.arrange(f1a, g2, f1b, g1, layout_matrix=layout)
+pdf("/home//ejp/src/pacological/analysis/figures/fig1.pdf", width = 9.5, height = 4.5)
+grid.arrange(f2a, g2, f2b, g1, layout_matrix=layout)
 dev.off()
 ```
 
 
-# Fig 2 - PAC, and PAC/MI, and spectral/temporal properties
+# Fig 2 - PAC, and PAC/MI relation
 
-```{r fig2a, fig.width=2.5, fig.height=2, echo=FALSE, warning=FALSE, message=FALSE}
-# --
-# Preprocess A
+```{r fig2, fig.width=2.5, fig.height=2, echo=FALSE, warning=FALSE, message=FALSE}
+# -- PAC
+# -- MI
+# Sel N and p
 pac_fig2 <- filter(pac_exp70, N == 100, pn == 1.00)
 
 # Select, rename, and order 'em
@@ -292,16 +268,34 @@ pac_fig2$X <- factor(pac_fig2$X, levels=c("S", "EI", "E", "I"))
 pac_fig2 %>% group_by(X) %>% summarise(M=mean(mean), SD=sd(mean)) -> pac_stats
 limits <- aes(ymax = M + SD, ymin=M - SD)
 
-f2a <- qplot(data=pac_stats, x=X, y=M, geom="bar", stat="identity", width=.75) + 
+f3a <- qplot(data=pac_stats, x=X, y=M, geom="bar", stat="identity", width=.75) + 
   geom_errorbar(limits, width=0.2, color="grey") + 
   ylab("SC") + theme_classic() + 
   geom_hline(yintercept=0, color="grey") + 
-  xlab("")
+  xlab("") 
+
+# -------
+# 3B, Series
+pac_exp70 %>% 
+  filter(N == 100, pn == 1.00, X %in% c("gain_p", "silenced_p", "summed_p", "stim_p")) %>%
+  droplevels()  %>% select(X, mean, std, Istim, g, N, pn) -> pac_fig2b
+
+pac_fig2b$X <- revalue(pac_fig2b$X, c("gain_p"="EI", "summed_p"="E", "silenced_p"="I", "stim_p"="S"))
+pac_fig2b$X <- factor(pac_fig2b$X, levels=c("S", "EI", "E", "I"))
+f3b0 <- ggplot(data=pac_fig2b, aes(x=Istim, y=mean, group=g, color=g)) +
+  geom_line() +
+  facet_grid(.~X) +
+  theme_classic() + 
+  xlim(0,30) + 
+  ylab("SC") +
+  geom_hline(yintercept=0, color="grey") + 
+  xlab(expression(r[s])) +
+  theme(strip.background = element_blank(), axis.title.x = element_text(colour = "red")) 
 ```
 
-```{r load_fig2b, echo=FALSE, warning=FALSE, message=FALSE}
-# --
-# Load B
+```{r load_all_fig2b, echo=FALSE, warning=FALSE, message=FALSE}
+# ================================================================
+# Load all the data
 rates <- c(2, 6, 10, 14, 18, 22, 26, 30)
 gs <- c(1,2,3,4,5,6,7,8)
 Ns <- c(100, 200, 300, 400, 500)
@@ -321,18 +315,14 @@ pac_exp70a <- droplevels(pac_exp70a)
 h_exp70a <- droplevels(h_exp70a)
 ```
 
-```{r fig2b, fig.width=7.5, fig.height=4.5, echo=FALSE, warning=FALSE, message=FALSE}
-# --
-# Preprocess B
+```{r fig2b, g3, fig.width=7.5, fig.height=4.5, echo=FALSE, warning=FALSE, message=FALSE}
 tmpdf <- data.frame(mi=(mi_exp70a$gain_p - mi_exp70a$stim_p), 
                     pac=(pac_exp70a$gain_p - pac_exp70a$stim_p))
 
-# --
-# Plot B1
-f2b1 <- ggplot(data=tmpdf, aes(x=pac, y=mi)) + 
+f3b1 <- ggplot(data=tmpdf, aes(x=pac, y=mi)) + 
   geom_point(size=1.5, alpha=0.2) + 
   ggtitle("EI") + theme_classic() +
-  ylab(expression(paste(Delta, "MI (bits)"))) +
+  ylab(expression(paste(Delta, "MI"))) +
   xlab("") + 
   ylim(-.25,.25) +
 #   stat_smooth(method = "lm", formula = y ~ x) +
@@ -340,14 +330,12 @@ f2b1 <- ggplot(data=tmpdf, aes(x=pac, y=mi)) +
   geom_hline(yintercept=0, color="grey") +
   geom_vline(yintercept=0, color="grey") 
 
-# --
-# Preprocess B2
+r_ei <- cor.test(tmpdf$pac, tmpdf$mi, method = "spearman")
+
 tmpdf <- data.frame(mi=(mi_exp70a$summed_p - mi_exp70a$stim_p), 
                     pac=(pac_exp70a$summed_p - pac_exp70a$stim_p))
 
-# --
-# Plot B2
-f2b2 <- ggplot(data=tmpdf, aes(x=pac, y=mi)) + 
+f3b2 <- ggplot(data=tmpdf, aes(x=pac, y=mi)) + 
   geom_point(size=1.5, alpha=0.2) + 
   ggtitle("E") + 
   theme_classic() + ylab("") +
@@ -358,26 +346,37 @@ f2b2 <- ggplot(data=tmpdf, aes(x=pac, y=mi)) +
   geom_hline(yintercept=0, color="grey") +
   geom_vline(yintercept=0, color="grey") 
 
-# --
-# Preprocess B3
+r_e <- cor.test(tmpdf$pac, tmpdf$mi, method = "spearman")
+
 tmpdf <- data.frame(mi=(mi_exp70a$silenced_p - mi_exp70a$stim_p), 
                     pac=(pac_exp70a$silenced_p - pac_exp70a$stim_p))
 
-# --
-# Plot B3
-f2b3 <- ggplot(data=tmpdf, aes(x=pac, y=mi)) + 
+f3b3 <- ggplot(data=tmpdf, aes(x=pac, y=mi)) + 
   geom_point(size=1.5, alpha=0.2) + 
   ggtitle("I") + 
-  theme_classic() + 
-  xlab("") + 
-  ylab("") +
+  theme_classic() + xlab("") + ylab("") +
+#   stat_smooth(method = "lm", formula = y ~ x) +
   xlim(-.3,.3) +
   ylim(-.25,.25) +
   geom_hline(yintercept=0, color="grey") +
   geom_vline(yintercept=0, color="grey") 
+
+r_i <- cor.test(tmpdf$pac, tmpdf$mi, method = "spearman")
+
+layoutm <- rbind(
+    c(1, 1, 2, 2, 2, 2),
+    c(3, 3, 4, 4, 5, 5)
+  )
+grid.arrange(f3a, f3b0, f3b1, f3b2, f3b3, layout_matrix=layoutm)
+
+pdf("/home//ejp/src/pacological/analysis/figures/fig2.pdf", width = 8, height = 4.5)
+grid.arrange(f3a, f3b0, f3b1, f3b2, f3b3, layout_matrix=layoutm)
+dev.off()
 ```
 
-``` {r load_nfig2c, echo=FALSE, fig.width=6, fig.height=4, echo=FALSE, warning=FALSE, message=FALSE}
+# TODO Spectral and temporal examples.
+
+``` {r fig3_load, echo=FALSE, fig.width=6, fig.height=4, echo=FALSE, warning=FALSE, message=FALSE}
 rates <- c(6, 14, 30)
 gs <- c(1,4,8)
 Ns <- c(100)
@@ -386,53 +385,100 @@ pns <- c(1)
 path <- "/home/ejp/src/pacological/data"
 demopath <- paste(path, "/demo2/", sep="")
 lfps <- load.demo2(demopath, "lfps", rates, gs, Ns, pns)
-lfps %>% select(X, Istim, g, stim_p, gain_p, silenced_p, summed_p)  %>% 
-  rename(c(X="times", stim_p = "S", gain_p = "EI", silenced_p="I", summed_p="E")) -> 
-  lfps
 ```
 
-```{r fig2c, echo=FALSE, fig.width=6, fig.height=4, echo=FALSE, warning=FALSE, message=FALSE}
-# Preprocess D
-# Select LFPs for plotting
-r_s <- 14
-g <- 4
-lfps %>% 
-  filter(g == g, Istim == r_s) %>%
-  select(-S) %>%
-  gather('pop', x, EI, E, I) -> 
-  lfp_sel
+```{r fig3_b, echo=FALSE, fig.width=6, fig.height=4, echo=FALSE, warning=FALSE, message=FALSE}
+lfps %>% select(X,Istim, g, stim_p, gain_p, silenced_p, summed_p) -> lfps
+colnames(lfps) <- c("times", "Istim", "g", "S", "EI", "I", "E")
+
+f4b1 <- ggplot(data=filter(lfps, times < 1000), aes(x=times, y=EI)) + facet_grid(Istim~g) + geom_line() +
+  theme_minimal() + 
+  ylab("EI") +
+  geom_smooth(aes(x=times, y=S), color="purple", alpha=0.6, method="loess") +
+  theme(axis.line=element_blank(),
+#       axis.text.x=element_blank(),
+      axis.text=element_blank(),
+      axis.ticks=element_blank(),
+      axis.title.x=element_blank(),
+#       axis.title.y=element_blank(),
+#       legend.position="none",
+      panel.background=element_blank(),
+      panel.border=element_blank(),
+      panel.grid.major=element_blank(),
+      panel.grid.minor=element_blank(),
+      plot.background=element_blank(),
+      strip.text.y = element_text(angle = 0)) 
+
+f4b2 <- ggplot(data=filter(lfps, times < 1000), aes(x=times, y=E)) + facet_grid(Istim~g) + geom_line() +
+  theme_minimal() + 
+  ylab("E") +
+  geom_smooth(aes(x=times, y=S), color="purple", alpha=0.6, method="loess") +
+  theme(axis.line=element_blank(),
+#       axis.text.x=element_blank(),
+      axis.text=element_blank(),
+      axis.ticks=element_blank(),
+      axis.title.x=element_blank(),
+#       axis.title.y=element_blank(),
+#       legend.position="none",
+      panel.background=element_blank(),
+      panel.border=element_blank(),
+      panel.grid.major=element_blank(),
+      panel.grid.minor=element_blank(),
+      plot.background=element_blank(),
+      strip.text.y = element_text(angle = 0)) 
+
+f4b3 <- ggplot(data=filter(lfps, times < 1000), aes(x=times, y=I)) + facet_grid(Istim~g) + geom_line() +
+  theme_minimal() + 
+  ylab("I") +
+  geom_smooth(aes(x=times, y=S), color="purple", alpha=0.6, method="loess") +
+  theme(axis.line=element_blank(),
+#       axis.text.x=element_blank(),
+      axis.text=element_blank(),
+      axis.ticks=element_blank(),
+      axis.title.x=element_blank(),
+#       axis.title.y=element_blank(),
+#       legend.position="none",
+      panel.background=element_blank(),
+      panel.border=element_blank(),
+      panel.grid.major=element_blank(),
+      panel.grid.minor=element_blank(),
+      plot.background=element_blank(),
+      strip.text.y = element_text(angle = 0)) 
+```
+
+```{r fig3a, echo=FALSE, fig.width = 8, fig.height = 9, echo=FALSE, warning=FALSE, message=FALSE}
+library(bspec)
 
 # --
-# Plot D
-f2d <- ggplot(data=filter(lfp_sel, times < 1000), aes(x=times, y=x)) + 
-  geom_line() +
-  theme_classic() + 
-  facet_grid(.~pop) +
-  theme(strip.background = element_blank()) +
-  ylab("Normalized LFP") +
-  xlab("Time (ms)")
-
-# --
-# Calc PSDS for C
-psds <- NULL
+# Calc PSDs
 models <- c("EI", "E", "I")
-for(model in models){
-  spec <- pspectrum((filter(lfp_sel, pop == model))$x, x.frqsamp=1000)
-  psds <- rbind(
-    psds,
-    cbind(
-      #           spec$frequency,
-      #           spec$power,
-      spec$freq, 
-      spec$spec, 
-      rep(model, length(spec$freq)), 
-      rep(r_s, length(spec$freq)), 
-      rep(g, length(spec$freq))
+psds <- NULL
+for(r_s in rates){
+  for(g in gs){
+    tmpdf <- filter(lfps, Istim == r_s, gs == g)
+    for(model in models){
+      # Welch
+#       xt <- ts(tmpdf[[model]], start=0, end=5, frequency = 1000/2)
+#       spec <- welchPSD(xt, seglength = 1)      
+      
+      # Adapt
+      spec <- pspectrum(tmpdf[[model]], x.frqsamp=1000/3)
+      psds <- rbind(
+        psds,
+        cbind(
+#           spec$frequency,
+#           spec$power,
+          spec$freq, 
+          spec$spec, 
+          rep(model, length(spec$freq)), 
+          rep(r_s, length(spec$freq)), 
+          rep(g, length(spec$freq))
+        )
       )
-    )
+    }
+  }
 }
-
-# Process for C
+# rm(tmpdf)
 psds <- as.data.frame(psds, stringsAsFactors = FALSE)
 colnames(psds) <- c("freq", "spec", "model", "r_s", "g")
 
@@ -441,42 +487,50 @@ psds$spec <- as.numeric(psds$spec)
 psds$r_s <- as.numeric(psds$r_s)
 psds$g <- as.numeric(psds$g)
 psds$model <- factor(psds$model, levels = models)
-
 # --
-# Plot C
-f2c <- ggplot(data=filter(psds, freq > 1), aes(x=freq, y=spec, color=model)) + 
+# Plot
+
+# model
+f4a1 <- ggplot(data=filter(psds, g == 1, r_s == 14), aes(x=freq, y=spec, color=model)) + 
   geom_line() + 
-  scale_color_discrete("") +
+#   scale_x_log10() + 
   scale_y_log10() + 
-  scale_x_log10() + 
-  theme_classic() +
-  annotation_logticks() +             
+  xlim(1,30) + 
+  theme_classic() + 
+  theme(strip.background = element_blank()) + 
   xlab("Frequency (Hz)") + 
-  ylab("Spectral power") +
-  theme(legend.position="right")
+  ylab("PSD")
+
+# rate
+f4a2 <- qplot(data=filter(psds, g == 1), x=freq, y=spec, color=r_s, facets=model~., geom="line", group=r_s) +  
+#   scale_x_log10() + 
+  scale_y_log10() + 
+  xlim(1,30) +
+  scale_colour_gradient(low="red", high="pink", space="Lab", name=expression(r[s])) + 
+  theme_classic() + 
+  theme(strip.background = element_blank(), strip.text.y = element_text(angle = 0)) + 
+  xlab("Frequency (Hz)") + 
+  ylab("PSD") 
+
+# g
+# f4a3 <- qplot(data=filter(psds, r_s == 6), x=freq, y=spec, color=g, facets=model~., geom="line", group=g) + scale_x_log10() + scale_y_log10() + theme_classic() + theme(strip.background = element_blank()) + xlab("Frequency (Hz)") + ylab("PSD")
 
 # --
-# Plot fig 2
-pdf("/home//ejp/src/pacological/analysis/figures/fig2.pdf", width = 10, height = 4.5)
+# Plot figure
 laym <- rbind(
-  c(1, NA, 2, 3, 4),
-  c(5, 5, 6, 6, 6)
+  c(1, 3),
+  c(2, 4),
+  c(2, 5)
 )
-grid.arrange(f2a, f2b1, f2b2, f2b3, f2c, f2d, layout_matrix=laym)
-dev.off()
 
-png("/home//ejp/src/pacological/analysis/figures/fig2.png", width = 720, height = 324)
-laym <- rbind(
-  c(1, NA, 2, 3, 4),
-  c(5, 5, 6, 6, 6)
-)
-grid.arrange(f2a, f2b1, f2b2, f2b3, f2c, f2d, layout_matrix=laym)
+pdf("/home//ejp/src/pacological/analysis/figures/fig3.pdf", width = 8, height = 9)
+grid.arrange(f4a1, f4a2, f4b1, f4b2, f4b3, layout_matrix=laym)
 dev.off()
 ```
 
-# Fig 3
+# Fig 4
 
-```{r load_fig3, echo=FALSE, warning=FALSE, message=FALSE}
+```{r load71, echo=FALSE, warning=FALSE, message=FALSE}
 path <- "/home/ejp/src/pacological/data"
 rates <- c(2, 6, 10, 14, 18, 22, 26, 30)
 gs <- c(1,2,3,4,5,6,7,8)
@@ -501,8 +555,7 @@ poprates_exp71 %>%
          Ssp = as.numeric(Ssp) / N[1], 
          EI=as.numeric(EI) / N[1], 
          E=as.numeric(E) / N[1], 
-         I=as.numeric(I) / N[1]) -> 
-  popmeans_exp71
+         I=as.numeric(I) / N[1]) -> popmeans_exp71
 
 # Join M and SD
 popmeans_exp71$stat <- rep("M", nrow(popmeans_exp71))
@@ -520,11 +573,10 @@ exp71 %>%
     ddf <- cbind(EI, E, I)
     ddf[is.nan(ddf)] <- 0
     data.frame(ddf)
-  }) -> 
-  prime_exp71
+  }) -> prime_exp71
+```
 
-# --
-# Create Poisson distributions
+```{r fig4}
 r_s <- 10
 r_o <- 2
 g <- 4
@@ -533,12 +585,8 @@ d_s <- data.frame(S=rpois(100, r_s))
 d_e <- cbind(d_s, data.frame(E=rpois(100, r_s + g * r_o)))
 d_i <- cbind(d_s, data.frame(I=rpois(100, r_s - g * r_o)))
 d_ei <- cbind(d_s, data.frame(EI=rpois(100, r_s * g * r_o)))
-```
 
-```{r fig3, fig.width=8, fig.height=5, echo=FALSE, warning=FALSE, message=FALSE}
-# -- 
-# Plot B
-f3b1 <- ggplot(data=gather(d_ei, 'pop', x, S, EI), aes(x=x, fill=pop, color=pop)) + 
+fb1 <- ggplot(data=gather(d_ei, 'pop', x, S, EI), aes(x=x, fill=pop, color=pop)) + 
   geom_density(alpha=0.5, adjust=2) +
   scale_colour_manual("", values = c("grey", "black")) + 
   scale_fill_manual("", values = c("grey", "black")) + 
@@ -549,7 +597,7 @@ f3b1 <- ggplot(data=gather(d_ei, 'pop', x, S, EI), aes(x=x, fill=pop, color=pop)
 #   ggtitle("EI") +
   theme(legend.position="right")
 
-f3b2 <- ggplot(data=gather(d_e, 'pop', x, S, E), aes(x=x, fill=pop, color=pop)) + 
+fb2 <- ggplot(data=gather(d_e, 'pop', x, S, E), aes(x=x, fill=pop, color=pop)) + 
   geom_density(alpha=0.5, adjust=2) +
   scale_colour_manual("", values = c("grey", "black")) + 
   scale_fill_manual("", values = c("grey", "black")) + 
@@ -557,9 +605,10 @@ f3b2 <- ggplot(data=gather(d_e, 'pop', x, S, E), aes(x=x, fill=pop, color=pop)) 
   xlab("") +
   xlim(0,120) +
   ylab("Density (AU)") +
+#   ggtitle("E") +
   theme(legend.position="right")
 
-f3b3 <- ggplot(data=gather(d_i, 'pop', x, S, I), aes(x=x, fill=pop, color=pop)) + 
+fb3 <- ggplot(data=gather(d_i, 'pop', x, S, I), aes(x=x, fill=pop, color=pop)) + 
   geom_density(alpha=0.5, adjust=2) +
   scale_colour_manual("", values = c("grey", "black")) + 
   scale_fill_manual("", values = c("grey", "black")) + 
@@ -567,11 +616,10 @@ f3b3 <- ggplot(data=gather(d_i, 'pop', x, S, I), aes(x=x, fill=pop, color=pop)) 
   xlab(expression(r)) +
   xlim(0,120) +
   ylab("") +
+#   ggtitle("I") +
   theme(legend.position="right")
 
-# --
-# Plot C
-f3c1 <- prime_exp71 %>%
+fc1 <- prime_exp71 %>%
   gather(pop, dprime, EI, E, I) %>%
   filter(N == 100) %>%
   ggplot(aes(x=Istim, y=dprime, color=g, group=g)) +
@@ -585,26 +633,10 @@ f3c1 <- prime_exp71 %>%
   xlim(0,30) +
   theme(strip.background = element_blank(), axis.title.x = element_text(colour = "red"))
   
-# --
-# Load artwork
 img3 <- readPNG("/home/ejp/src/pacological/analysis/figures/signal_noise.png")
 g3 <- rasterGrob(img3, interpolate=TRUE)
 
-# --
-# Assemble Fig 3
-pdf("/home//ejp/src/pacological/analysis/figures/fig3.pdf", width = 9, height = 5)
-layout <- rbind(
-    c(1, 1, 3),
-    c(1, 1, 3),
-    c(1, 1, 4),
-    c(2, 2, 4),
-    c(2, 2, 5),
-    c(2, 2, 5)
-  )
-grid.arrange(g3, f3c1, f3b1, f3b2, f3b3, layout_matrix=layout)
-dev.off()
 
-png("/home//ejp/src/pacological/analysis/figures/fig3.png", width = 648, height = 360)
 layout <- rbind(
     c(1, 1, 3),
     c(1, 1, 3),
@@ -613,7 +645,9 @@ layout <- rbind(
     c(2, 2, 5),
     c(2, 2, 5)
   )
-grid.arrange(g3, f3c1, f3b1, f3b2, f3b3, layout_matrix=layout)
+
+pdf("/home//ejp/src/pacological/analysis/figures/fig4.pdf", width = 9, height = 5)
+grid.arrange(g3, fc1, fb1, fb2, fb3, layout_matrix=layout)
 dev.off()
 ```
 

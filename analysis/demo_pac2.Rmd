@@ -1,0 +1,180 @@
+---
+title: "PAC demo2"
+author: "Erik J Peterson"
+date: "8/30/2015"
+output: html_document
+---
+
+```{r helper_fns, echo=FALSE}
+library(ggplot2)
+library(grid)
+library(gridExtra)
+library(plyr)
+library(dplyr)
+library(reshape)
+library(png)
+library(psd)
+
+load.demo <- function(path, type, rates, gs, Ns, pns){
+  df <- NULL
+  for(r_s in rates){
+    for(g in gs){
+      for(N in Ns){
+        for(pn in pns){
+          try({
+            name <- paste("Istim-", as.character(r_s), 
+                          "_g-", as.character(g),
+                          "_N-", as.character(N),
+                          "_pn-", as.character(pn),
+                          "_", as.character(type), 
+                          ".csv", sep="")
+            di <- read.csv(paste(path, name, sep=""))
+            di["Istim"] <- rep(r_s, nrow(di))
+            di["g"] <- rep(g, nrow(di))
+            di["N"] <- rep(N, nrow(di))
+            di["pn"] <- rep(pn, nrow(di))
+            
+            df <- rbind(df, di)  
+          })  
+        }
+      }
+    }
+  }
+  df
+}
+```
+
+``` {r}
+rates <- c(6, 14, 30)
+gs <- c(1,4,8)
+Ns <- c(100)
+pns <- c(1)
+
+path <- "/home/ejp/src/pacological/data"
+demopath <- paste(path, "/demo2/", sep="")
+lfps <- load.demo(demopath, "lfps", rates, gs, Ns, pns)
+```
+
+
+# Timecourses
+
+```{r three_pacs}
+lfps  %>% select(X, Istim, g, stim_p, gain_p, silenced_p, summed_p) -> lfps
+colnames(lfps) <- c("times", "Istim", "g", "S", "E_I", "I_", "E_")
+
+# f4b0 <- qplot(data=lfps[lfps$times < 2000,], x=times, y=S, facets=Istim~g, geom="line") + 
+#   theme_minimal() + 
+#   ylab("S") +
+#   theme(axis.line=element_blank(),
+# #       axis.text.x=element_blank(),
+#       axis.text=element_blank(),
+#       axis.ticks=element_blank(),
+#       axis.title.x=element_blank(),
+# #       axis.title.y=element_blank(),
+# #       legend.position="none",
+#       panel.background=element_blank(),
+#       panel.border=element_blank(),
+#       panel.grid.major=element_blank(),
+#       panel.grid.minor=element_blank(),
+#       plot.background=element_blank())  
+
+f4b1 <- qplot(data=lfps[lfps$times < 2000,], x=times, y=E_I, facets=Istim~g, geom="line") + 
+  theme_minimal() + 
+  ylab("E+I") +
+  theme(axis.line=element_blank(),
+#       axis.text.x=element_blank(),
+      axis.text=element_blank(),
+      axis.ticks=element_blank(),
+      axis.title.x=element_blank(),
+#       axis.title.y=element_blank(),
+#       legend.position="none",
+      panel.background=element_blank(),
+      panel.border=element_blank(),
+      panel.grid.major=element_blank(),
+      panel.grid.minor=element_blank(),
+      plot.background=element_blank())  
+
+f4b2 <- qplot(data=lfps[lfps$times < 2000,], x=times, y=E_, facets=Istim~g, geom="line") + 
+  theme_minimal() + 
+  ylab("E") +
+  theme(axis.line=element_blank(),
+#       axis.text.x=element_blank(),
+      axis.text=element_blank(),
+      axis.ticks=element_blank(),
+      axis.title.x=element_blank(),
+#       axis.title.y=element_blank(),
+#       legend.position="none",
+      panel.background=element_blank(),
+      panel.border=element_blank(),
+      panel.grid.major=element_blank(),
+      panel.grid.minor=element_blank(),
+      plot.background=element_blank())  
+
+f4b3 <- qplot(data=lfps[lfps$times < 2000,], x=times, y=I_, facets=Istim~g, geom="line") + 
+  theme_minimal() + 
+  ylab("I") +
+  theme(axis.line=element_blank(),
+#       axis.text.x=element_blank(),
+      axis.text=element_blank(),
+      axis.ticks=element_blank(),
+      axis.title.x=element_blank(),
+#       axis.title.y=element_blank(),
+#       legend.position="none",
+      panel.background=element_blank(),
+      panel.border=element_blank(),
+      panel.grid.major=element_blank(),
+      panel.grid.minor=element_blank(),
+      plot.background=element_blank())  
+```
+
+# PSD
+
+
+```{r}
+models <- c("E_I", "E_", "I_")
+psds <- NULL
+for(r_s in rates){
+  for(g in gs){
+    tmpdf <- filter(lfps, Istim == r_s, gs == g)
+    for(model in models){
+      spec <- pspectrum(tmpdf[[model]], x.frqsamp=1000)
+      psds <- rbind(
+        psds,
+        cbind(
+          spec$freq, 
+          spec$spec, 
+          rep(model, length(spec$freq)), 
+          rep(r_s, length(spec$freq)), 
+          rep(g, length(spec$freq))
+        )
+      )
+    }
+  }
+}
+rm(tmpdf)
+psds <- as.data.frame(psds, stringsAsFactors = FALSE)
+colnames(psds) <- c("freq", "spec", "model", "Istim", "g")
+
+psds$freq <- as.numeric(psds$freq)
+psds$spec <- as.numeric(psds$spec)
+psds$Istim <- as.numeric(psds$Istim)
+psds$g <- as.numeric(psds$g)
+```
+
+```{r plots}
+# model
+f4a1 <- qplot(data=filter(psds, freq < 1000, g == 1, Istim == 14), x=freq, y=spec, color=model, geom="line", group=model) + scale_x_log10() + scale_y_log10() + theme_bw() + theme(strip.background = element_blank()) + xlab("Frequency (Hz)") + ylab("PSD")
+
+# rate
+f4a2 <- qplot(data=filter(psds, freq < 1000, g == 1), x=freq, y=spec, color=Istim, facets=model~., geom="line", group=Istim) + scale_x_log10() + scale_y_log10() + scale_colour_gradient(low="red", high="pink", space="Lab") + theme_bw() + theme(strip.background = element_blank()) + xlab("Frequency (Hz)") + ylab("PSD")
+
+# g
+f4a3 <- qplot(data=filter(psds, freq < 1000, Istim == 6), x=freq, y=spec, color=g, facets=model~., geom="line", group=g) + scale_x_log10() + scale_y_log10() + theme_bw() + theme(strip.background = element_blank()) + xlab("Frequency (Hz)") + ylab("PSD")
+
+laym <- rbind(
+  c(1, 4),
+  c(2, 5),
+  c(3, 6)
+  )
+grid.arrange(f4a1, f4a2, f4a3, f4b1, f4b2, f4b3, layout_matrix=laym)
+```

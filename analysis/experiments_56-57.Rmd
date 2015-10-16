@@ -1,0 +1,170 @@
+---
+title: "Experiments 57"
+author: "Erik J Peterson"
+date: "8-28-2015"
+output:
+  html_document:
+    number_sections: yes
+    theme: spacelab
+    toc: yes
+---
+
+# Background was stim; PAC works by assembly recruitment.
+
+```{r helper_fns, echo=FALSE, fig.width=6, fig.height=4, echo=FALSE, warning=FALSE, message=FALSE}
+library(ggplot2)
+library(gridExtra)
+
+path <- "/home/ejp/src/pacological/data"
+
+load.data <- function(path, type, rates, gs, Ns, pns){
+  df <- NULL
+  for(r_s in rates){
+    for(g in gs){
+      for(N in Ns){
+        for(pn in pns){
+          try({
+            name <- paste("Istim-", as.character(r_s), 
+                          "_g-", as.character(g),
+                          "_N-", as.character(N),
+                          "_pn-", as.character(pn),
+                          "__", as.character(type), 
+                          "_summary.csv", sep="")
+            di <- read.csv(paste(path, name, sep=""))
+            di["Istim"] <- rep(r_s, nrow(di))
+            di["g"] <- rep(g, nrow(di))
+            di["N"] <- rep(N, nrow(di))
+            di["pn"] <- rep(pn, nrow(di))
+            
+            df <- rbind(df, di)  
+          })  
+        }
+      }
+    }
+  }
+  df
+}
+```
+
+# MI
+## Gain
+
+```{r exps, echo=FALSE, warning=FALSE, message=FALSE}
+rates <- c(2, 6, 10, 14, 18, 22, 26, 30)
+gs <- c(1,2,3,4,5,6,7,8)
+Ns <- c(100, 200, 300, 400, 500)
+pns <- c(0.25, 0.5, 0.75, 1)
+
+exp57path <- paste(path, "/exp57/", sep="")
+mi_exp57 <- load.data(exp57path, "MI", rates, gs, Ns, pns)
+h_exp57 <- load.data(exp57path, "H", rates, gs, Ns, pns)
+pac_exp57 <- load.data(exp57path, "PAC", rates, gs, Ns, pns)
+```
+
+```{r mi_gain, fig.width=6, fig.height=4, echo=FALSE, warning=FALSE, message=FALSE}
+p1 <- ggplot(
+  data=subset(mi_exp57, X == 'gain_p'), 
+  aes(x=Istim, y=mean, group=g, color=g)) + 
+  geom_line() + 
+  ylab("MI") + theme_bw() + 
+  ggtitle("exp57") + 
+  #ylim(0,1) + 
+  facet_grid(pn~N, scales = "free_y") +
+  stat_summary(
+    data=subset(mi_exp57, X == 'stim_p'), 
+    aes(x=Istim, y=mean), geom="line", fun.y=mean, color="red"
+  )
+print(p1)
+```
+
+## Additive
+
+```{r mi_summed, fig.width=6, fig.height=4, echo=FALSE, warning=FALSE, message=FALSE}
+p2 <- ggplot(
+  data=subset(mi_exp57, X == 'summed_p'), 
+  aes(x=Istim, y=mean, group=g, color=g)) + 
+  geom_line() + 
+  ylab("MI") + theme_bw() + 
+  ggtitle("exp57") + 
+  #ylim(0,1) + 
+  facet_grid(pn~N, scales = "free_y") +
+  stat_summary(
+    data=subset(mi_exp57, X == 'stim_p'), 
+    aes(x=Istim, y=mean), geom="line", fun.y=mean, color="red"
+  )
+print(p2)
+```
+
+## Subtractive
+
+```{r mi_silenced, fig.width=6, fig.height=4, echo=FALSE, warning=FALSE, message=FALSE}
+p3 <- ggplot(
+  data=subset(mi_exp57, X == 'silenced_p'), 
+  aes(x=Istim, y=mean, group=g, color=g)) + 
+  geom_line() + 
+  ylab("MI") + theme_bw() + 
+  ggtitle("exp57") + 
+  #ylim(0,1) + 
+  facet_grid(pn~N, scales = "free_y") +
+  stat_summary(
+    data=subset(mi_exp57, X == 'stim_p'), 
+    aes(x=Istim, y=mean), geom="line", fun.y=mean, color="red"
+  )
+print(p3)
+```
+
+# PAC
+
+## Gain
+
+```{r pac_gain, fig.width=6, fig.height=4, echo=FALSE, warning=FALSE, message=FALSE}
+p4 <- ggplot(
+  data=subset(pac_exp57, X == 'gain_p'), 
+  aes(x=Istim, y=mean, group=g, color=g)) + 
+  geom_line() + 
+  ylab("MI") + theme_bw() + 
+  ggtitle("exp57") + 
+  #ylim(0,1) + 
+  facet_grid(pn~N, scales = "free_y") +
+  stat_summary(
+    data=subset(pac_exp57, X == 'stim_p'), 
+    aes(x=Istim, y=mean), geom="line", fun.y=mean, color="red"
+  )
+print(p4)
+```
+
+## Additive
+
+```{r pac_summed, fig.width=6, fig.height=4, echo=FALSE, warning=FALSE, message=FALSE}
+p5 <- ggplot(
+  data=subset(pac_exp57, X == 'summed_p'), 
+  aes(x=Istim, y=mean, group=g, color=g)) + 
+  geom_line() + 
+  ylab("MI") + theme_bw() + 
+  ggtitle("exp57") + 
+  #ylim(0,1) + 
+  facet_grid(pn~N, scales = "free_y") +
+  stat_summary(
+    data=subset(pac_exp57, X == 'stim_p'), 
+    aes(x=Istim, y=mean), geom="line", fun.y=mean, color="red"
+  )
+print(p5)
+```
+
+## Subtractive
+
+```{r pac_silenced, fig.width=6, fig.height=4, echo=FALSE, warning=FALSE, message=FALSE}
+p6 <- ggplot(
+  data=subset(pac_exp57, X == 'silenced_p'), 
+  aes(x=Istim, y=mean, group=g, color=g)) + 
+  geom_line() + 
+  ylab("MI") + theme_bw() + 
+  ggtitle("exp57") + 
+  #ylim(0,1) + 
+  facet_grid(pn~N, scales = "free_y") +
+  stat_summary(
+    data=subset(pac_exp57, X == 'stim_p'), 
+    aes(x=Istim, y=mean), geom="line", fun.y=mean, color="red"
+  )
+print(p6)
+```

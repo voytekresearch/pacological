@@ -1,0 +1,339 @@
+---
+title: "Experiments 65"
+author: "Erik J Peterson"
+date: "9-1-2015"
+output:
+  html_document:
+    number_sections: yes
+    theme: spacelab
+    toc: yes
+---
+
+# Exp 65
+
+Are replicates of exp57 except for,
+
+ - Fixed gmult = **2**
+ - `Silenced` and `summed` are now subtracted or added (respectivly) to gain modulation. We answer the question of what are the MI properties of a mixed good/bad PAC system.
+
+```{r helper_fns, echo=FALSE, fig.width=6, fig.height=4, echo=FALSE, warning=FALSE, message=FALSE}
+library(ggplot2)
+library(grid)
+library(gridExtra)
+library(plyr)
+library(dplyr)
+library(reshape)
+library(png)
+
+path <- "/home/ejp/src/pacological/data"
+
+load.data <- function(path, type, rates, gs, Ns, pns){
+  df <- NULL
+  for(r_s in rates){
+    for(g in gs){
+      for(N in Ns){
+        for(pn in pns){
+          try({
+            name <- paste("Istim-", as.character(r_s), 
+                          "_g-", as.character(g),
+                          "_N-", as.character(N),
+                          "_pn-", as.character(pn),
+                          "__", as.character(type), 
+                          "_summary.csv", sep="")
+            di <- read.csv(paste(path, name, sep=""))
+            di["Istim"] <- rep(r_s, nrow(di))
+            di["g"] <- rep(g, nrow(di))
+            di["N"] <- rep(N, nrow(di))
+            di["pn"] <- rep(pn, nrow(di))
+            
+            df <- rbind(df, di)  
+          })  
+        }
+      }
+    }
+  }
+  df
+}
+
+load.all.data <- function(path, type, rates, gs, Ns, pns){
+  df <- NULL
+  for(r_s in rates){
+    for(g in gs){
+      for(N in Ns){
+        for(pn in pns){
+          try({
+            name <- paste("Istim-", as.character(r_s), 
+                          "_g-", as.character(g),
+                          "_N-", as.character(N),
+                          "_pn-", as.character(pn),
+                          "__", as.character(type), 
+                          ".csv", sep="")
+            di <- read.csv(paste(path, name, sep=""))
+            di["Istim"] <- rep(r_s, nrow(di))
+            di["g"] <- rep(g, nrow(di))
+            di["N"] <- rep(N, nrow(di))
+            di["pn"] <- rep(pn, nrow(di))
+            
+            df <- rbind(df, di)  
+          })  
+        }
+      }
+    }
+  }
+  df
+}
+
+load.demo <- function(path, type, rates, ks){
+  dexp <- NULL
+  for(r_o in rates){
+    for(r_s in rates){
+      for(k in ks){
+        try({
+          name <- paste("Iosc-", as.character(r_o), 
+                      "_Istim-", as.character(r_s), 
+                      "_k", as.character(k), 
+                      "_", as.character(type), 
+                      ".csv", sep="")
+          di <- read.csv(paste(path, name, sep=""))
+          di["Iosc"] <- rep(r_o, nrow(di))
+          di["Istim"] <- rep(r_s, nrow(di))
+          di["k"] <- rep(k, nrow(di))
+          
+          dexp <- rbind(dexp, di)  
+       })
+      }
+    }
+  }
+dexp
+}
+
+
+load.demo2 <- function(path, type, rates, gs, Ns, pns){
+  df <- NULL
+  for(r_s in rates){
+    for(g in gs){
+      for(N in Ns){
+        for(pn in pns){
+          try({
+            name <- paste("Istim-", as.character(r_s), 
+                          "_g-", as.character(g),
+                          "_N-", as.character(N),
+                          "_pn-", as.character(pn),
+                          "_", as.character(type), 
+                          ".csv", sep="")
+            di <- read.csv(paste(path, name, sep=""))
+            di["Istim"] <- rep(r_s, nrow(di))
+            di["g"] <- rep(g, nrow(di))
+            di["N"] <- rep(N, nrow(di))
+            di["pn"] <- rep(pn, nrow(di))
+            
+            df <- rbind(df, di)  
+          })  
+        }
+      }
+    }
+  }
+  df
+}
+```
+
+```{r load65, echo=FALSE, warning=FALSE, message=FALSE}
+rates <- c(2, 6, 10, 14, 18, 22, 26, 30)
+gs <- c(1,2,3,4,5,6,7,8)
+Ns <- c(100, 200, 300, 400, 500)
+pns <- c(0.25, 0.5, 0.75, 1)
+
+exp65path <- paste(path, "/exp65/", sep="")
+mi_exp65 <- load.data(exp65path, "MI", rates, gs, Ns, pns)
+h_exp65 <- load.data(exp65path, "H", rates, gs, Ns, pns)
+pac_exp65 <- load.data(exp65path, "PAC", rates, gs, Ns, pns)
+```
+
+```{r fig65, fig.width=6, fig.height=4, echo=FALSE, warning=FALSE, message=FALSE}
+# -- MI
+# Sel N and p
+mi_fig65 <- filter(mi_exp65, N == 100, pn == 1.00)
+
+# Get Avg MI for stim
+Mstim <- mean((filter(mi_fig65, X == "stim_p"))$mean)
+mi_fig65$mean <- mi_fig65$mean - Mstim
+
+# Select, rename, and order 'em
+mi_fig65 <- filter(mi_fig65, X %in% c("gain_p", "silenced_p", "summed_p"))
+mi_fig65$X <- revalue(mi_fig65$X, c("gain_p"="EI", "summed_p"="E", "silenced_p"="I"))
+mi_fig65$X <- factor(mi_fig65$X, levels=c("EI", "E", "I")) 
+
+# Sum and plot
+mi_stats <- group_by(mi_fig65, X)
+mi_stats <- summarise(mi_stats, M=mean(mean), SD=sd(mean))
+limits <- aes(ymax = M + SD, ymin=M - SD)
+
+f65a <- qplot(data=mi_stats, x=X, y=M, geom="bar", stat="identity", width=.75) + geom_errorbar(limits, width=0.2, color="grey") + ylab(expression(paste(Delta, "MI"))) + theme_bw() + geom_hline(yintercept=0, color="grey") + xlab("") + ggtitle("Exp 59")
+
+# 2B, Series
+mi_exp65 %>% 
+  filter(N == 100, pn == 1.00, X %in% c("gain_p", "silenced_p", "summed_p", "stim_p")) %>%
+  droplevels() -> mi_fig65b
+
+mi_fig65b$X <- revalue(mi_fig65b$X, c("gain_p"="EI", "summed_p"="E", "silenced_p"="I", "stim_p"="S"))
+
+# Get subtract mean I_stim
+mi_fig65b %>% select(mean, Istim, g, X) %>% 
+  group_by(Istim, g, X) %>%
+  cast(Istim + g ~ X, value = "mean") %>%
+  mutate(E=E - S, I = I - S, EI = EI - S) %>%
+  select(-S) %>% 
+  melt(id=c('Istim', 'g'), variable_name = 'model') -> mi_stats
+
+mi_stats$model <- revalue(mi_stats$model, c("EI"="EI"))
+mi_stats$model <- factor(mi_stats$model, levels=c("EI", "E", "I"))
+
+f65b <- qplot(data=mi_stats, x=Istim, y=value, facets=.~model, color=g, geom="line", group=g) + 
+  theme_bw() + 
+  xlim(0,30) + 
+  ylab(expression(paste(Delta, "MI"))) +
+  geom_hline(yintercept=0, color="grey") + 
+  xlab(expression(r[s])) +
+  theme(strip.background = element_blank(), axis.title.x = element_text(colour = "red")) +
+  ggtitle("Exp 65")
+print(f65b)
+```
+
+
+# Exp 66
+
+- Fixed gmult = **4**
+
+
+```{r load66, echo=FALSE, warning=FALSE, message=FALSE}
+rates <- c(2, 6, 10, 14, 18, 22, 26, 30)
+gs <- c(1,2,3,4,5,6,7,8)
+Ns <- c(100, 200, 300, 400, 500)
+pns <- c(0.25, 0.5, 0.75, 1)
+
+exp66path <- paste(path, "/exp66/", sep="")
+mi_exp66 <- load.data(exp66path, "MI", rates, gs, Ns, pns)
+h_exp66 <- load.data(exp66path, "H", rates, gs, Ns, pns)
+pac_exp66 <- load.data(exp66path, "PAC", rates, gs, Ns, pns)
+```
+
+```{r fig66, fig.width=6, fig.height=4, echo=FALSE, warning=FALSE, message=FALSE}
+# -- MI
+# Sel N and p
+mi_fig66 <- filter(mi_exp66, N == 100, pn == 1.00)
+
+# Get Avg MI for stim
+Mstim <- mean((filter(mi_fig66, X == "stim_p"))$mean)
+mi_fig66$mean <- mi_fig66$mean - Mstim
+
+# Select, rename, and order 'em
+mi_fig66 <- filter(mi_fig66, X %in% c("gain_p", "silenced_p", "summed_p"))
+mi_fig66$X <- revalue(mi_fig66$X, c("gain_p"="EI", "summed_p"="E", "silenced_p"="I"))
+mi_fig66$X <- factor(mi_fig66$X, levels=c("EI", "E", "I")) 
+
+# Sum and plot
+mi_stats <- group_by(mi_fig66, X)
+mi_stats <- summarise(mi_stats, M=mean(mean), SD=sd(mean))
+limits <- aes(ymax = M + SD, ymin=M - SD)
+
+f66a <- qplot(data=mi_stats, x=X, y=M, geom="bar", stat="identity", width=.75) + geom_errorbar(limits, width=0.2, color="grey") + ylab(expression(paste(Delta, "MI"))) + theme_bw() + geom_hline(yintercept=0, color="grey") + xlab("") + ggtitle("Exp 59")
+
+# 2B, Series
+mi_exp66 %>% 
+  filter(N == 100, pn == 1.00, X %in% c("gain_p", "silenced_p", "summed_p", "stim_p")) %>%
+  droplevels() -> mi_fig66b
+
+mi_fig66b$X <- revalue(mi_fig66b$X, c("gain_p"="EI", "summed_p"="E", "silenced_p"="I", "stim_p"="S"))
+
+# Get subtract mean I_stim
+mi_fig66b %>% select(mean, Istim, g, X) %>% 
+  group_by(Istim, g, X) %>%
+  cast(Istim + g ~ X, value = "mean") %>%
+  mutate(E=E - S, I = I - S, EI = EI - S) %>%
+  select(-S) %>% 
+  melt(id=c('Istim', 'g'), variable_name = 'model') -> mi_stats
+
+mi_stats$model <- revalue(mi_stats$model, c("EI"="EI"))
+mi_stats$model <- factor(mi_stats$model, levels=c("EI", "E", "I"))
+
+f66b <- qplot(data=mi_stats, x=Istim, y=value, facets=.~model, color=g, geom="line", group=g) + 
+  theme_bw() + 
+  xlim(0,30) + 
+  ylab(expression(paste(Delta, "MI"))) +
+  geom_hline(yintercept=0, color="grey") + 
+  xlab(expression(r[s])) +
+  theme(strip.background = element_blank(), axis.title.x = element_text(colour = "red")) +
+  ggtitle("Exp 66")
+print(f66b)
+```
+
+
+# Exp 67
+
+- Still a mixed EI, E, I system bu `gmult` set back to `g`. That is, not constant anymore. This is really the model I should have made to start.
+
+```{r load67, echo=FALSE, warning=FALSE, message=FALSE}
+rates <- c(2, 6, 10, 14, 18, 22, 26, 30)
+gs <- c(1,2,3,4,5,6,7,8)
+Ns <- c(100, 200, 300, 400, 500)
+pns <- c(0.25, 0.5, 0.75, 1)
+
+exp67path <- paste(path, "/exp67/", sep="")
+mi_exp67 <- load.data(exp67path, "MI", rates, gs, Ns, pns)
+h_exp67 <- load.data(exp67path, "H", rates, gs, Ns, pns)
+pac_exp67 <- load.data(exp67path, "PAC", rates, gs, Ns, pns)
+```
+
+```{r fig67, fig.width=6, fig.height=4, echo=FALSE, warning=FALSE, message=FALSE}
+# -- MI
+# Sel N and p
+mi_fig67 <- filter(mi_exp67, N == 100, pn == 1.00)
+
+# Get Avg MI for stim
+Mstim <- mean((filter(mi_fig67, X == "stim_p"))$mean)
+mi_fig67$mean <- mi_fig67$mean - Mstim
+
+# Select, rename, and order 'em
+mi_fig67 <- filter(mi_fig67, X %in% c("gain_p", "silenced_p", "summed_p"))
+mi_fig67$X <- revalue(mi_fig67$X, c("gain_p"="EI", "summed_p"="E", "silenced_p"="I"))
+mi_fig67$X <- factor(mi_fig67$X, levels=c("EI", "E", "I")) 
+
+# Sum and plot
+mi_stats <- group_by(mi_fig67, X)
+mi_stats <- summarise(mi_stats, M=mean(mean), SD=sd(mean))
+limits <- aes(ymax = M + SD, ymin=M - SD)
+
+f67a <- qplot(data=mi_stats, x=X, y=M, geom="bar", stat="identity", width=.75) + geom_errorbar(limits, width=0.2, color="grey") + ylab(expression(paste(Delta, "MI"))) + theme_bw() + geom_hline(yintercept=0, color="grey") + xlab("") + ggtitle("Exp 59")
+
+# 2B, Series
+mi_exp67 %>% 
+  filter(N == 100, pn == 1.00, X %in% c("gain_p", "silenced_p", "summed_p", "stim_p")) %>%
+  droplevels() -> mi_fig67b
+
+mi_fig67b$X <- revalue(mi_fig67b$X, c("gain_p"="EI", "summed_p"="E", "silenced_p"="I", "stim_p"="S"))
+
+# Get subtract mean I_stim
+mi_fig67b %>% select(mean, Istim, g, X) %>% 
+  group_by(Istim, g, X) %>%
+  cast(Istim + g ~ X, value = "mean") %>%
+  mutate(E=E - S, I = I - S, EI = EI - S) %>%
+  select(-S) %>% 
+  melt(id=c('Istim', 'g'), variable_name = 'model') -> mi_stats
+
+mi_stats$model <- revalue(mi_stats$model, c("EI"="EI"))
+mi_stats$model <- factor(mi_stats$model, levels=c("EI", "E", "I"))
+
+f67b <- qplot(data=mi_stats, x=Istim, y=value, facets=.~model, color=g, geom="line", group=g) + 
+  theme_bw() + 
+  xlim(0,30) + 
+  ylab(expression(paste(Delta, "MI"))) +
+  geom_hline(yintercept=0, color="grey") + 
+  xlab(expression(r[s])) +
+  theme(strip.background = element_blank(), axis.title.x = element_text(colour = "red")) +
+  ggtitle("Exp 67")
+print(f67b)
+```
+
+
+
+
