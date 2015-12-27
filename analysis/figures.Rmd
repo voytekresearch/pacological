@@ -544,6 +544,7 @@ f3b1 <- ggplot(data=gather(d_ei, 'pop', x, S, EI), aes(x=x, fill=pop, color=pop)
   scale_fill_manual("", values = c("grey", "black")) + 
   theme_classic() + 
   xlim(0,120) +
+  ylim(0,0.25) +
   xlab("") +
   ylab("") +
 #   ggtitle("EI") +
@@ -556,6 +557,7 @@ f3b2 <- ggplot(data=gather(d_e, 'pop', x, S, E), aes(x=x, fill=pop, color=pop)) 
   theme_classic() + 
   xlab("") +
   xlim(0,120) +
+  ylim(0,0.25) +
   ylab("Density (AU)") +
   theme(legend.position="right")
 
@@ -564,8 +566,9 @@ f3b3 <- ggplot(data=gather(d_i, 'pop', x, S, I), aes(x=x, fill=pop, color=pop)) 
   scale_colour_manual("", values = c("grey", "black")) + 
   scale_fill_manual("", values = c("grey", "black")) + 
   theme_classic() + 
-  xlab(expression(r)) +
+  xlab("Number of spikes") +
   xlim(0,120) +
+  ylim(0,0.25) +
   ylab("") +
   theme(legend.position="right")
 
