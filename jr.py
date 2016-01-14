@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import division
 
+from functools import partial
 from copy import deepcopy
 from scipy.integrate import odeint, ode
 from sdeint import itoint
@@ -21,44 +22,53 @@ def S(x):
     v0 = 6.
     r = 0.56
 
-    return (2 * e0) / (1 + exp(r * (v0 - x)))
+    # A variation from the orginal Jansen 1995 taken from 
+    # Wang and Knoshe, ' A Realistic Neural Mass Model of the Cortex with 
+    # Laminar-Specific Connections and Synaptic Plasticity – Evaluation with 
+    # Auditory Habituation' PLOS one 2013
+    # (may be based on an earlier Friston paper; see references.
+    return (2 * e0) / (1 + exp(r * (v0 - x))) - (2 * e0) / (1 + exp(r * v0))
 
 
-def jt(rs, t, Istim=None, c5=10):
+def jr(rs, t, Istim=None, c5=10., c6=10., p=120.):
     y0, y1, y2, y3, y4, y5 = rs[0:6]
-    y6, y7, y8, y9, y10, y11 = rs[6:]
+    y6, y7, y8, y9, y10, y11 = rs[6:12]
+
+    # Drive/signal corrupted by addtive noise
+    dW = rs[12]
+    p += dW 
 
     # --
     # Common params
-    A = 3.25
+    A = 3.25  # mV
     B = 22.
 
     # 1 STIM
     # Params
-    p = 150
+    rs[13] = Istim(t)
+    pstim = p
     if Istim is not None:
-        p *= Istim(t)  # global
+        pstim *= Istim(t)  # global
 
-    c = 250.
+    c = 60.
     c1 = 1. * c
     c2 = 0.8 * c
     c3 = 0.25 * c
     c4 = 0.25 * c
 
     # David & Fristom, 'A neural mass model for MEG/EEG', Neuroimage, 2003
-    e = 217.40  # 1/tau = 1/4.6 ms
-    i = 344.82  # 1/tau = 1/2.9 ms
+    e = (1 / 4.6) * 1000  # ms to s 
+    i = (1 / 2.9) * 1000 
 
     ret = zeros_like(rs)
     ret[0] = y3
     ret[1] = y4
     ret[2] = y5
-    ret[3] = (A * e * (p + c2 * S(c1 * y2))) - (2 * e * y3) - ((e ** 2) * y0)
-    ret[4] = (B * i * c4 * S(c3 * y2)) - (2 * i * y4) - ((i ** 2) * y1)
-    ret[5] = (A * e * S(y0 - y1 + (c5 * y9))) - (2 * e * y5) - (e ** 2 * y2)
+    ret[3] = (A * e * S(y1 - y2 + (c5 * y6))) - (2 * e * y3) - ((e ** 2) * y0)
+    ret[4] = (A * e * (pstim + c2 * S(c1 * y0))) - (2 * e * y4) - ((e ** 2) * y1)
+    ret[5] = (B * i * c4 * S((c3 * y0) + (c6 * y6))) - (2 * i * y5) - ((i ** 2) * y2)
 
     # # 2: THETA OSCILLATION
-    p2 = 10
     c = 135.
     c1 = 1. * c
     c2 = 0.8 * c
@@ -66,71 +76,100 @@ def jt(rs, t, Istim=None, c5=10):
     c4 = 0.25 * c
 
     # David & Fristom, 'A neural mass model for MEG/EEG', Neuroimage, 2003
-    e2 = 33.  # 1/tau = 1/30 ms
-    i2 = 50.  # 1/tau = 1/20 ms
+    e2 = (1 / 30.) * 1000  # ms to s 
+    i2 = (1 / 20.) * 1000  
     ret[6] = y9
     ret[7] = y10
     ret[8] = y11
-    ret[9] = (A * e2 * (p2 + c2 * S(c1 * y8))) - (2 * e2 * y9) - ((e2 ** 2) * y6)
-    ret[10] = (B * i2 * c4 * S(c3 * y8)) - (2 * i2 * y10) - ((i2 ** 2) * y7)
-    ret[11] = (A * e2 * S(y6 - y7)) - (2 * e2 * y11) - (e2 ** 2 * y8)
+    ret[9] = (A * e2 * S(y7 - y8)) - (2 * e2 * y9) - ((e2 ** 2) * y6)
+    ret[10] = (A * e2 * (p + c2 * S(c1 * y6))) - (2 * e2 * y10) - ((e2 ** 2) * y7)
+    ret[11] = (B * i2 * c4 * S(c3 * y6)) - (2 * i2 * y11) - ((i2 ** 2) * y8)
 
     return ret
+
+
+def run(t, dt, rs0, p, c5, c6, sigma, seed=42):
+    # Stim params
+    d = 1  # drive rate (want 0-1)
+    scale = .01 * d
+    Istim = create_I(t, d, scale, dt=dt, seed=seed)
+
+    times = linspace(0, t, t / dt)
+    f = partial(jr, Istim=Istim, c5=c5, c6=c6, p=p)
+    g = partial(ornstein_uhlenbeck, sigma=sigma, loc=[12])
+    rs = itoint(f, g, rs0, times)
+
+    return times, rs
 
 
 if __name__ == "__main__":
     import pylab as plt
     plt.ion()
-    from functools import partial
     from foof.util import create_psd
 
     # run
-    rs0 = asarray([0., 0., 0., 1., 1., 1.] + [0., 0., 0., 1., 1., 1.])
+    rs0 = asarray([0., 0., 0., 1., 1., 1.] + [0., 0., 0., 1., 1., 1.] + [0., 0])
     tmax = 2  # run time, ms
     dt = 1 / 10000.  # resolution, ms
-
-    # Stim params
-    d = 1  # drive rate (want 0-1)
-    scale = .01 * d
-    Istim = create_I(tmax, d, scale, dt=dt, seed=42)
-    # Istim = None
-
-    times = linspace(0, tmax, tmax / dt)
-    f = partial(jt, Istim=Istim, c5=20)
-    g = partial(ornstein_uhlenbeck, sigma=0.1, loc=[1])
-    rs = itoint(f, g, rs0, times)
-    # rs = odeint(f, rs0, times)
+    p = 130. # Jansen range was 120-320
+    sigma = p * 0.1
+    c5 = 10.  # ?
+    c6 = c5 * 1
+    times, rs = run(tmax, dt, rs0, p, c5, c6, sigma, seed=42)
 
     # -------------------------------------
     # # Select some interesting vars and plot
-    t = times >= 1.0
+    t = times >= 0.0
     eeg = rs[t,1] - rs[t,2]
-    x =  [Istim(x) for x in times[t]]
+    x = rs[t,13]
+    dW = rs[t,12]
     osc = rs[t,7] - rs[t,8]
 
-    n = 4
-    plt.figure(figsize=(14, 10))
+    # Time
+    n = 6
+    plt.figure(figsize=(10, 14))
 
     plt.subplot(n, 1, 1)
     plt.legend(loc='best')
-    plt.plot(times[t], x, 'k', label='Stim')
+    plt.plot(times[t], x, 'k', label='Stimulus input')
+    plt.legend(loc='best')
     plt.xlabel("Time (s)")
-    plt.ylabel("Firing rate (Hz)")
+    plt.ylabel("mV")
+
 
     plt.subplot(n, 1, 2)
-    plt.plot(times[t], eeg, 'r', label='Stimulus EEG')
+    plt.plot(times[t], eeg, 'k', label='Stimulus EEG')
     plt.legend(loc='best')
     plt.xlabel("Time (s)")
-    plt.ylabel("Firing rate (Hz)")
+    plt.ylabel("Hz")
 
     plt.subplot(n, 1, 3)
-    plt.plot(x, eeg, label='phase plane (stim, eeg)', color='k')
+    plt.plot(times[t], rs[t,0], 'k', label='Stimulus Pyr')
     plt.legend(loc='best')
-    plt.xlabel("r_e (Hz)")
-    plt.ylabel("r_i (Hz)")
+    plt.xlabel("Time (s)")
+    plt.ylabel("mV")
 
     plt.subplot(n, 1, 4)
     plt.plot(times[t], osc, 'r', label='Theta EEG')
     plt.legend(loc='best')
     plt.xlabel("Time (s)")
-    plt.ylabel("Firing rate (Hz)")
+    plt.ylabel("Hz")
+
+    plt.subplot(n, 1, 5)
+    plt.plot(times[t], rs[t,6], 'r', label='Theta Pyr')
+    plt.legend(loc='best')
+    plt.xlabel("Time (s)")
+    plt.ylabel("Hz")  
+
+    plt.subplot(n, 1, 6)
+    plt.legend(loc='best')
+    plt.plot(times[t], dW, 'k', label='Background noise')
+    plt.xlabel("Time (s)")
+    plt.ylabel("dW (Hz)")
+
+    # Phase
+    plt.figure(figsize=(6, 6))
+    plt.plot(eeg, osc, label='phase plane (stim, eeg)', color='k')
+    plt.legend(loc='best')
+    plt.xlabel("Stimulus EEG")
+    plt.ylabel("Theta EEG")
