@@ -105,7 +105,7 @@ if __name__ == "__main__":
     dt = 1 / 10000.  # resolution, ms
     p = 130. # Jansen range was 120-320
 
-    # O-S connection strength weights (don't use 0).
+    # O-S connection strength weights (must use 0).
     cs = range(0, 32, 2)
 
     # Try three levels of noise
