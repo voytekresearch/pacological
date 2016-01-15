@@ -105,19 +105,39 @@ if __name__ == "__main__":
     path = sys.argv[1]
     name = os.path.join(path, "jr")
 
+    n_trials = 20
     t = 2  # run time, ms
     dt = 1 / 10000.  # resolution, ms
     p = 130. # Jansen range was 120-320
-    sigma = 0.05
 
     # O-S connection strength weights (don't use 0).
     cs = range(0, 32, 2)
 
-    n_trials = 20
-
+    # Try three levels of noise
+    sigma = 0.01
     Parallel(n_jobs=11)(
         delayed(exp)(
-                name + "_{0}".format(k), 
+                name + "sigma{1}_{0}".format(k, sigma), 
+                t, dt, 
+                p, sigma, cs, 
+                save=True, seed=k
+            ) for k in range(n_trials)
+    )
+
+    sigma = 0.1
+    Parallel(n_jobs=11)(
+        delayed(exp)(
+                name + "sigma{1}_{0}".format(k, sigma), 
+                t, dt, 
+                p, sigma, cs, 
+                save=True, seed=k
+            ) for k in range(n_trials)
+    )
+
+    sigma = 0.5
+    Parallel(n_jobs=11)(
+        delayed(exp)(
+                name + "sigma{1}_{0}".format(k, sigma), 
                 t, dt, 
                 p, sigma, cs, 
                 save=True, seed=k

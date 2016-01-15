@@ -95,7 +95,7 @@ def run(t, dt, rs0, p, c5, c6, sigma, seed=42):
 
     times = linspace(0, t, t / dt)
     f = partial(jr, Istim=Istim, c5=c5, c6=c6, p=p)
-    g = partial(ornstein_uhlenbeck, sigma=sigma, loc=[0, 1, 2, 12])
+    g = partial(ornstein_uhlenbeck, sigma=sigma, loc=[1, 2, 6, 7, 8, 12])
     rs = itoint(f, g, rs0, times)
 
     return times, rs
@@ -111,8 +111,8 @@ if __name__ == "__main__":
     tmax = 2  # run time, ms
     dt = 1 / 10000.  # resolution, ms
     p = 130. # Jansen range was 120-320
-    sigma = 0.05
-    c5 = 30.  # ?
+    sigma = 0.5
+    c5 = 10.  # ?
     c6 = c5 * 1
     times, rs = run(tmax, dt, rs0, p, c5, c6, sigma, seed=42)
 
