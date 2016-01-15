@@ -26,26 +26,16 @@ def exp(name, t, dt, p, sigma, cs, save=True, seed=42, t_min=1):
     _, stim_rs = run(t, dt, rs0, p, 0, 0, sigma, seed=seed)
     pyramidal_stim = stim_rs[:,0]
 
-    # Init for PAC
+    # PAC
     metrics = []
-
-    n = stim_rs.shape[0]
-    rss = [np.vstack([
-        np.repeat(-1, n), np.repeat('stim', n), 
-        np.repeat(0, n), np.repeat(0, n), 
-        stim_rs.T
-    ]).T]
-
-    # go PAC
+    rss = []
     for i, cpair in enumerate(product(cs, repeat=2)):
         # -- Integrate and extract data --------------------------------------
         ce, ci = cpair
         times, rs = run(t, dt, rs0, p, ce, ci, sigma, seed=seed)
         
-        select = times >= t_min
-
-        pyramidal_pac = rs[select,0]
-        pyramidal_lfp = rs[select,1] - rs[select,2]  # Mock EEG
+        pyramidal_pac = rs[:,0]
+        pyramidal_lfp = rs[:,1] - rs[:,2]  # Mock EEG
         
         # create labels
         if (ce == 0) and (ci == 0):
@@ -59,13 +49,16 @@ def exp(name, t, dt, p, sigma, cs, save=True, seed=42, t_min=1):
         else:
             lab = 'unbalamced'
 
+        # Select data for metrics
+        select = times >= t_min  
+
         # -- I ---------------------------------------------------------------
         to_calc = ('HX', 'HY', 'HXY')
         m = 8  # Per Ince's advice
         info = en.DiscreteSystem(
             en.quantise(pyramidal_stim[select], m)[0],
             (1, m),
-            en.quantise(pyramidal_pac, m)[0],
+            en.quantise(pyramidal_pac[select], m)[0],
             (1, m)
         )
         info.calculate_entropies(method='pt', calc=to_calc)
@@ -76,16 +69,17 @@ def exp(name, t, dt, p, sigma, cs, save=True, seed=42, t_min=1):
         f = 7
         low_f = (f-3, f+3)
         high_f = (80, 250)
-        pac = pacfn(pyramidal_lfp, pyramidal_lfp, low_f, high_f)
+        pac = pacfn(pyramidal_lfp[select], pyramidal_lfp[select], low_f, high_f)
         
         # -- Gather the results ----------------------------------------------
         metrics.append((i, lab, ce, ci, I, H, pac))
         print(name, metrics[-1])
 
-        n = rs.shape[0]
+        n = pyramidal_stim.shape[0]
         rss.append(np.vstack([
             np.repeat(i, n), np.repeat(lab, n), 
-            np.repeat(ce, n), np.repeat(ci, n), rs.T
+            np.repeat(ce, n), np.repeat(ci, n), 
+            pyramidal_stim, pyramidal_pac, pyramidal_lfp,
         ]).T)
 
     metrics = np.vstack(metrics)
@@ -96,7 +90,8 @@ def exp(name, t, dt, p, sigma, cs, save=True, seed=42, t_min=1):
                 header=['i', 'mode', 'ce', 'ci', 'MI', 'H', 'pac'])
 
         df_rs = pd.DataFrame(rss)
-        df_rs.to_csv(name + "_r.csv", index=False, header=False)
+        df_rs.to_csv(name + "_ys.csv", index=False, 
+                header=['i', 'mode', 'ce', 'ci', 'stim', 'pac', 'lfp'])
 
     return metrics, rss
 
