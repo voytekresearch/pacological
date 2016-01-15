@@ -47,7 +47,7 @@ def exp(name, t, dt, p, sigma, cs, save=True, seed=42, t_min=1):
         elif ce == ci:
             lab = 'gain'
         else:
-            lab = 'unbalamced'
+            lab = 'unbalanced'
 
         # Select data for metrics
         select = times >= t_min  
@@ -79,7 +79,7 @@ def exp(name, t, dt, p, sigma, cs, save=True, seed=42, t_min=1):
         rss.append(np.vstack([
             np.repeat(i, n), np.repeat(lab, n), 
             np.repeat(ce, n), np.repeat(ci, n), 
-            pyramidal_stim, pyramidal_pac, pyramidal_lfp,
+            pyramidal_stim, pyramidal_pac, times,
         ]).T)
 
     metrics = np.vstack(metrics)
@@ -91,7 +91,7 @@ def exp(name, t, dt, p, sigma, cs, save=True, seed=42, t_min=1):
 
         df_rs = pd.DataFrame(rss)
         df_rs.to_csv(name + "_ys.csv", index=False, 
-                header=['i', 'mode', 'ce', 'ci', 'stim', 'pac', 'lfp'])
+                header=['i', 'mode', 'ce', 'ci', 'stim', 'pac', 'times'])
 
     return metrics, rss
 
