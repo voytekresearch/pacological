@@ -423,3 +423,13 @@ exp36:
 	-mkdir data/exp36
 	-rm data/exp36/*
 	nice -19 python exp/exp36.py data/exp36/
+
+
+# =========================================================================
+# Neural mass experiments
+# Jansen rit test 
+exp80:
+	-mkdir data/exp80
+	-rm data/exp80/*
+	nice -19 python exp/exp80.py data/exp80/
+

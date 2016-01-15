@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 """PAC as selective amplification and information transmission."""
 import sys
-import pandas as pd
 import os
+import pandas as pd
 import numpy as np
 import pyentropy as en
 from pacpy.pac import plv as pacfn
@@ -13,7 +13,7 @@ from itertools import product
 from collections import defaultdict
 
 
-def exp(name, t, dt, p, sigma, cs, save=True, seed=42):
+def exp(name, t, dt, p, sigma, cs, save=True, seed=42, t_min=1):
     print("Running experiment {0}".format(name))
 
     if (0 not in cs):
@@ -38,14 +38,14 @@ def exp(name, t, dt, p, sigma, cs, save=True, seed=42):
 
     # go PAC
     for i, cpair in enumerate(product(cs, repeat=2)):
-        print(i, cpair)
-
         # -- Integrate and extract data --------------------------------------
         ce, ci = cpair
         times, rs = run(t, dt, rs0, p, ce, ci, sigma, seed=seed)
+        
+        select = times >= t_min
 
-        pyramidal_pac = rs[:,0]
-        pyramidal_lfp = rs[:,1] - rs[:,2]  # Mock EEG
+        pyramidal_pac = rs[select,0]
+        pyramidal_lfp = rs[select,1] - rs[select,2]  # Mock EEG
         
         # create labels
         if (ce == 0) and (ci == 0):
@@ -54,14 +54,16 @@ def exp(name, t, dt, p, sigma, cs, save=True, seed=42):
             lab = 'summed'
         elif ci == 0:
             lab = 'silenced'
-        else:
+        elif ce == ci:
             lab = 'gain'
+        else:
+            lab = 'unbalamced'
 
         # -- I ---------------------------------------------------------------
         to_calc = ('HX', 'HY', 'HXY')
         m = 8  # Per Ince's advice
         info = en.DiscreteSystem(
-            en.quantise(pyramidal_stim, m)[0],
+            en.quantise(pyramidal_stim[select], m)[0],
             (1, m),
             en.quantise(pyramidal_pac, m)[0],
             (1, m)
@@ -78,7 +80,7 @@ def exp(name, t, dt, p, sigma, cs, save=True, seed=42):
         
         # -- Gather the results ----------------------------------------------
         metrics.append((i, lab, ce, ci, I, H, pac))
-        print metrics[-1]
+        print(name, metrics[-1])
 
         n = rs.shape[0]
         rss.append(np.vstack([
@@ -90,27 +92,30 @@ def exp(name, t, dt, p, sigma, cs, save=True, seed=42):
     rss = np.vstack(rss)
     if save:
         df_m = pd.DataFrame(metrics)
-        df_m.to_csv(name + "_metrics.csv", index=False)
+        df_m.to_csv(name + "_metrics.csv", index=False, 
+                header=['i', 'mode', 'ce', 'ci', 'MI', 'H', 'pac'])
 
         df_rs = pd.DataFrame(rss)
-        df_rs.to_csv(name + "_r.csv", index=False)
+        df_rs.to_csv(name + "_r.csv", index=False, header=False)
 
     return metrics, rss
 
 
 if __name__ == "__main__":
+    path = sys.argv[1]
+    name = os.path.join(path, "jr")
+
     t = 2  # run time, ms
     dt = 1 / 10000.  # resolution, ms
     p = 130. # Jansen range was 120-320
-    sigma = p * 0.2  # Scales dW
+    sigma = 0.05
 
     # O-S connection strength weights (don't use 0).
-    cs = [0, 1, 10, 20, 100]
+    cs = range(0, 32, 2)
 
     n_trials = 20
 
-    name = 'data/test/test'
-    Parallel(n_jobs=1)(
+    Parallel(n_jobs=11)(
         delayed(exp)(
                 name + "_{0}".format(k), 
                 t, dt, 
