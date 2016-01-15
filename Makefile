@@ -434,3 +434,9 @@ exp80:
 	-rm data/exp80/*
 	nice -19 python exp/exp80.py data/exp80/
 
+# Explore c and g (under fixed modest noise)
+exp81:
+	-mkdir data/exp81
+	-rm data/exp81/*
+	nice -19 python exp/exp81.py data/exp81/
+

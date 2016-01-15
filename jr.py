@@ -30,7 +30,7 @@ def S(x):
     return (2 * e0) / (1 + exp(r * (v0 - x))) - (2 * e0) / (1 + exp(r * v0))
 
 
-def jr(rs, t, Istim=None, c5=10., c6=10., p=120.):
+def jr(rs, t, Istim=None, A=3.25, B=22.0, c=60, c5=10., c6=10., p=120.):
     y0, y1, y2, y3, y4, y5 = rs[0:6]
     y6, y7, y8, y9, y10, y11 = rs[6:12]
 
@@ -38,18 +38,12 @@ def jr(rs, t, Istim=None, c5=10., c6=10., p=120.):
     dW = rs[12]
     pstim = p + dW 
 
-    # --
-    # Common params
-    A = 3.25  # mV
-    B = 22.
-
     # 1 STIM
     # Params
     rs[13] = Istim(t)
     if Istim is not None:
         pstim *= Istim(t)  # global
 
-    c = 60.
     c1 = 1. * c
     c2 = 0.8 * c
     c3 = 0.25 * c
@@ -68,37 +62,26 @@ def jr(rs, t, Istim=None, c5=10., c6=10., p=120.):
     ret[5] = (B * i * c4 * S((c3 * y0) + (c6 * y6))) - (2 * i * y5) - ((i ** 2) * y2)
 
     # # 2: THETA OSCILLATION
-    c = 135.
+    C = 3.25  # mV
+    D = 22.
+
+    c = 135.  # Over rides user input; want stable oscillation
     c1 = 1. * c
     c2 = 0.8 * c
     c3 = 0.25 * c
     c4 = 0.25 * c
 
-    # David & Fristom, 'A neural mass model for MEG/EEG', Neuroimage, 2003
+    # David & Fristom, 'C neural mass model for MEG/EEG', Neuroimage, 2003
     e2 = (1 / 30.) * 1000  # ms to s 
     i2 = (1 / 20.) * 1000  
     ret[6] = y9
     ret[7] = y10
     ret[8] = y11
-    ret[9] = (A * e2 * S(y7 - y8)) - (2 * e2 * y9) - ((e2 ** 2) * y6)
-    ret[10] = (A * e2 * (p + c2 * S(c1 * y6))) - (2 * e2 * y10) - ((e2 ** 2) * y7)
-    ret[11] = (B * i2 * c4 * S(c3 * y6)) - (2 * i2 * y11) - ((i2 ** 2) * y8)
+    ret[9] = (C * e2 * S(y7 - y8)) - (2 * e2 * y9) - ((e2 ** 2) * y6)
+    ret[10] = (C * e2 * (p + c2 * S(c1 * y6))) - (2 * e2 * y10) - ((e2 ** 2) * y7)
+    ret[11] = (D * i2 * c4 * S(c3 * y6)) - (2 * i2 * y11) - ((i2 ** 2) * y8)
 
     return ret
-
-
-def run(t, dt, rs0, p, c5, c6, sigma, seed=42):
-    # Stim params
-    d = 1  # drive rate (want 0-1)
-    scale = .01 * d
-    Istim = create_I(t, d, scale, dt=dt, seed=seed)
-
-    times = linspace(0, t, t / dt)
-    f = partial(jr, Istim=Istim, c5=c5, c6=c6, p=p)
-    g = partial(ornstein_uhlenbeck, sigma=sigma, loc=[1, 2, 6, 7, 8, 12])
-    rs = itoint(f, g, rs0, times)
-
-    return times, rs
 
 
 if __name__ == "__main__":
@@ -107,14 +90,25 @@ if __name__ == "__main__":
     from foof.util import create_psd
 
     # run
+    seed = 42
     rs0 = asarray([0., 0., 0., 1., 1., 1.] + [0., 0., 0., 1., 1., 1.] + [0., 0])
-    tmax = 2  # run time, ms
+    t = 2  # run time, ms
     dt = 1 / 10000.  # resolution, ms
     p = 130. # Jansen range was 120-320
-    sigma = 0.5
+    sigma = 0.2
     c5 = 10.  # ?
     c6 = c5 * 1
-    times, rs = run(tmax, dt, rs0, p, c5, c6, sigma, seed=42)
+
+    # Stim params
+    d = 1  # drive rate (want 0-1)
+    scale = .01 * d
+    Istim = create_I(t, d, scale, dt=dt, seed=seed)
+
+    # Integrate
+    times = linspace(0, t, t / dt)
+    f = partial(jr, Istim=Istim, c5=c5, c6=c6, p=p)
+    g = partial(ornstein_uhlenbeck, sigma=sigma, loc=[1, 2, 6, 7, 8, 12])
+    rs = itoint(f, g, rs0, times)
 
     # -------------------------------------
     # # Select some interesting vars and plot
