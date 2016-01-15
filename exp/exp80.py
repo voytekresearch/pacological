@@ -117,7 +117,7 @@ if __name__ == "__main__":
     sigma = 0.01
     Parallel(n_jobs=11)(
         delayed(exp)(
-                name + "sigma{1}_{0}".format(k, sigma), 
+                name + "_sigma-{1}_{0}".format(k, sigma), 
                 t, dt, 
                 p, sigma, cs, 
                 save=True, seed=k
@@ -127,7 +127,7 @@ if __name__ == "__main__":
     sigma = 0.1
     Parallel(n_jobs=11)(
         delayed(exp)(
-                name + "sigma{1}_{0}".format(k, sigma), 
+                name + "_sigma-{1}_{0}".format(k, sigma), 
                 t, dt, 
                 p, sigma, cs, 
                 save=True, seed=k
@@ -137,7 +137,7 @@ if __name__ == "__main__":
     sigma = 0.5
     Parallel(n_jobs=11)(
         delayed(exp)(
-                name + "sigma{1}_{0}".format(k, sigma), 
+                name + "_sigma-{1}_{0}".format(k, sigma), 
                 t, dt, 
                 p, sigma, cs, 
                 save=True, seed=k
