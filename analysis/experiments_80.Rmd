@@ -1,0 +1,140 @@
+---
+title: "Exp 80"
+author: "Erik J Peterson"
+date: "January 15, 2016"
+output: html_document
+---
+
+```{r helper_fns, echo=FALSE, fig.width=6, fig.height=4, echo=FALSE, warning=FALSE, message=FALSE}
+library(ggplot2)
+library(grid)
+library(gridExtra)
+library(plyr)
+library(dplyr)
+library(reshape)
+library(png)
+library(plyr)
+library(doParallel)
+library(tidyr)
+library(ggthemr)
+registerDoParallel(cores=10)
+
+path <- "/home/ejp/src/pacological/data/exp80/"
+```
+
+# Results
+
+MI and PAC as a function of PAC mode, then as a function of ce/ci for the unbalanced more only.
+
+## Sigma 0.01
+
+```{r sig01, fig.width=18, fig.height=6}
+files <- Sys.glob(paste(path, "jr_sigma-0.01_*_metrics.csv", sep=""))
+metrics <- NULL
+k <- 0
+for(file in files){
+  metric <- read.table(file, sep=",", header=TRUE)
+  metric$trial <- rep(k, nrow(metric))
+  k <- k + 1  
+  metrics <- rbind(metrics, metric)
+}
+
+# MI
+# Plot overall, the look at how ce/ci ration relates
+p1 <- ggplot(data=metrics, aes(x=mode, y=MI)) + geom_boxplot() + theme_classic()
+
+# PLot by ce/ci for unbalanced
+p2 <- ggplot(data=filter(metrics, mode == "unbalamced"), aes(x=ce/ci, y=MI, color=ce)) + 
+  geom_point() + 
+  theme_classic() + 
+  geom_point(data=filter(metrics, mode == "stim"), aes(x=i, y=MI), color="red", size=5) + 
+  facet_grid(.~trial) + 
+  geom_vline(xintercept=1, color="grey")
+
+# PAC
+p3 <- ggplot(data=metrics, aes(x=mode, y=pac)) + geom_boxplot() + theme_classic()
+
+p4 <- ggplot(data=filter(metrics, mode == "unbalamced"), aes(x=ce/ci, y=pac, color=ce)) + geom_point() + theme_classic() + geom_point(data=filter(metrics, mode == "stim"), aes(x=i, y=pac), color="red", size=5) + facet_grid(.~trial) + geom_vline(xintercept=1, color="grey")
+
+layoutm <- rbind(
+  c(1, 2, 2, 2, 2),
+  c(3, 4, 4, 4, 4)
+)
+grid.arrange(p1, p2, p3, p4, layout_matrix=layoutm)
+```
+
+## Sigma 0.1
+
+```{r sig1, fig.width=18, fig.height=6}
+files <- Sys.glob(paste(path, "jr_sigma-0.1_*_metrics.csv", sep=""))
+metrics <- NULL
+k <- 0
+for(file in files){
+  metric <- read.table(file, sep=",", header=TRUE)
+  metric$trial <- rep(k, nrow(metric))
+  k <- k + 1  
+  metrics <- rbind(metrics, metric)
+}
+
+# MI
+# Plot overall, the look at how ce/ci ration relates
+p1 <- ggplot(data=metrics, aes(x=mode, y=MI)) + geom_boxplot() + theme_classic()
+
+# PLot by ce/ci for unbalanced
+p2 <- ggplot(data=filter(metrics, mode == "unbalamced"), aes(x=ce/ci, y=MI, color=ce)) + 
+  geom_point() + 
+  theme_classic() + 
+  geom_point(data=filter(metrics, mode == "stim"), aes(x=i, y=MI), color="red", size=5) + 
+  facet_grid(.~trial) + 
+  geom_vline(xintercept=1, color="grey")
+
+# PAC
+p3 <- ggplot(data=metrics, aes(x=mode, y=pac)) + geom_boxplot() + theme_classic()
+
+p4 <- ggplot(data=filter(metrics, mode == "unbalamced"), aes(x=ce/ci, y=pac, color=ce)) + geom_point() + theme_classic() + geom_point(data=filter(metrics, mode == "stim"), aes(x=i, y=pac), color="red", size=5) + facet_grid(.~trial) + geom_vline(xintercept=1, color="grey")
+
+layoutm <- rbind(
+  c(1, 2, 2, 2, 2),
+  c(3, 4, 4, 4, 4)
+)
+grid.arrange(p1, p2, p3, p4, layout_matrix=layoutm)
+```
+
+## Sigma 0.5
+
+```{r sig5, fig.width=18, fig.height=6}
+files <- Sys.glob(paste(path, "jr_sigma-0.5_*_metrics.csv", sep=""))
+metrics <- NULL
+k <- 0
+for(file in files){
+  metric <- read.table(file, sep=",", header=TRUE)
+  metric$trial <- rep(k, nrow(metric))
+  k <- k + 1  
+  metrics <- rbind(metrics, metric)
+}
+
+# MI
+# Plot overall, the look at how ce/ci ration relates
+p1 <- ggplot(data=metrics, aes(x=mode, y=MI)) + geom_boxplot() + theme_classic()
+
+# PLot by ce/ci for unbalanced
+p2 <- ggplot(data=filter(metrics, mode == "unbalamced"), aes(x=ce/ci, y=MI, color=ce)) + 
+  geom_point() + 
+  theme_classic() + 
+  geom_point(data=filter(metrics, mode == "stim"), aes(x=i, y=MI), color="red", size=5) + 
+  facet_grid(.~trial) + 
+  geom_vline(xintercept=1, color="grey")
+
+# PAC
+p3 <- ggplot(data=metrics, aes(x=mode, y=pac)) + geom_boxplot() + theme_classic()
+
+p4 <- ggplot(data=filter(metrics, mode == "unbalamced"), aes(x=ce/ci, y=pac, color=ce)) + geom_point() + theme_classic() + geom_point(data=filter(metrics, mode == "stim"), aes(x=i, y=pac), color="red", size=5) + facet_grid(.~trial) + geom_vline(xintercept=1, color="grey")
+
+layoutm <- rbind(
+  c(1, 2, 2, 2, 2),
+  c(3, 4, 4, 4, 4)
+)
+grid.arrange(p1, p2, p3, p4, layout_matrix=layoutm)
+```
+
+* MI worse than 'stim' in all models. 
