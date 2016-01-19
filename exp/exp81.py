@@ -26,6 +26,9 @@ def exp(name, t, dt, cs, A=3.25, B=22.0, c=60, p=130.,
 
     if (0 not in cs):
         raise ValueError("cs must contain 0")
+    
+    if not save and no_return:
+        raise ValueError("Save must be True, or no_return must be False")
 
     # -- Create driving stimulus
     d = 1  # mean drive rate (want 0-1)
@@ -93,14 +96,12 @@ def exp(name, t, dt, cs, A=3.25, B=22.0, c=60, p=130.,
             y_lfp[select], y_lfp[select], low_f, high_f)
 
         # -- Gather the results
-        metrics.append((i, mode, ce, ci, I, H, pac))
+        metrics.append((i, mode, ce, ci, A, B, c, p, I, H, pac))
         print(name, metrics[-1])
 
         n = y0_stim.shape[0]
         rss.append(np.vstack([
-            np.repeat(i, n), np.repeat(mode, n),
-            np.repeat(ce, n), np.repeat(ci, n),
-            y0_stim, y0_pac, times,
+            np.repeat(i, n), y0_stim, y0_pac, times,
         ]).T)
 
     metrics = np.vstack(metrics)
@@ -109,11 +110,12 @@ def exp(name, t, dt, cs, A=3.25, B=22.0, c=60, p=130.,
     if save:
         df_m = pd.DataFrame(metrics)
         df_m.to_csv(name + "_metrics.csv", index=False,
-                header=['i', 'mode', 'ce', 'ci', 'MI', 'H', 'pac'])
+                header=['i', 'mode', 'ce', 'ci', 'A', 'B', 
+                    'c', 'p', 'MI', 'H', 'pac'])
 
         df_rs = pd.DataFrame(rss)
         df_rs.to_csv(name + "_ys.csv", index=False,
-                header=['i', 'mode', 'ce', 'ci', 'stim', 'pac', 'times'])
+                header=['i', 'stim', 'pac', 'times'])
 
     # Prevents memory overruns when running inside Parallel()
     if no_return:
