@@ -1,0 +1,99 @@
+---
+title: "Exp 81"
+author: "Erik J Peterson"
+date: "January 15, 2016"
+output: html_document
+---
+
+```{r helper_fns, echo=FALSE, fig.width=6, fig.height=4, echo=FALSE, warning=FALSE, message=FALSE}
+library(ggplot2)
+library(grid)
+library(gridExtra)
+library(plyr)
+library(dplyr)
+library(reshape)
+library(png)
+library(plyr)
+library(doParallel)
+library(tidyr)
+library(ggthemr)
+registerDoParallel(cores=10)
+
+path <- "/home/ejp/src/pacological/data/exp81/"
+```
+
+```{r}
+# Load all the metric data for this exp
+metrics <- NULL
+ks <- 0:19
+for (k in ks) {
+  files <- Sys.glob(paste(path, "jr_sigma-0.2_c-*_g-*_", k, "_metrics.csv", sep=""))
+  for(file in files){
+    metric <- read.table(file, sep=",", header=TRUE)
+    metric$trial <- rep(k, nrow(metric))
+    k <- k + 1  
+    metrics <- rbind(metrics, metric)
+    }  
+}
+rm(metric, files, file, k)
+
+# Average trials
+metrics %>%
+  group_by(mode, ce, ci, A, B, c) %>%
+  summarise(MI=mean(MI)) ->
+  metrics.m
+
+```
+
+# Results
+
+MI and PAC as a function of c, A and B (at sigma = 0.2)
+
+## Overall
+
+```{r overall, fig.width=5, fig.height=3}
+# MI
+# Plot overall, the look at how ce/ci ration relates
+p1a <- ggplot(data=metrics.m, aes(x=mode, y=MI))  + geom_jitter(color="grey", alpha=0.6, size=2) + theme_classic()
+print(p1a)
+
+p1b <- ggplot(data=metrics.m, aes(x=mode, y=MI, color=B/A)) + geom_jitter( alpha=0.6, size=2) + theme_classic()
+print(p1b)
+
+p1c <- ggplot(data=metrics.m, aes(x=mode, y=MI, color=c)) + geom_jitter( alpha=0.6, size=2) + theme_classic()
+print(p1c)
+
+p1d <- ggplot(data=metrics.m, aes(x=mode, y=MI, color=ce)) + geom_jitter( alpha=0.6, size=2) + theme_classic()
+print(p1d)
+
+p1e <- ggplot(data=metrics.m, aes(x=mode, y=MI, color=ci)) + geom_jitter( alpha=0.6, size=2) + theme_classic()
+print(p1e)
+```
+
+### Average effect of g and c
+
+```{r, gandc, fig.width=10, fig.height=4}
+metrics.m %>%
+  group_by(mode, c) %>%
+  summarise(MI=mean(MI)) %>%
+  ggplot(aes(x=c, y=MI)) + geom_point() + theme_classic() + facet_grid(.~mode) ->
+  p2
+# print(p2)
+
+metrics.m %>%
+  mutate(g = B/A) %>%
+  group_by(mode, g) %>%
+  summarise(MI=mean(MI)) %>%
+  ggplot(aes(x=g, y=MI)) + geom_point() + theme_classic() + facet_grid(.~mode) ->
+  p3
+# print(p3)
+grid.arrange(p2, p3, ncol=2)
+```
+
+* The weaker the `ce`/`ci` the greater the MI (consistent with exp80)
+* Neither `c` nor `g` drives MI above `stim`.
+* `g` does increase MI in the `gain` mode only (promising) but the overall effect is still well below `stim`.
+
+* In sum, these models are not showing multplicative response to balanced input. 
+    - Question remains how to implement this regime in a neural mass model. 
+    - Back to the literature?
