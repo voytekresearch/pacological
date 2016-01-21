@@ -441,3 +441,18 @@ exp81:
 	-rm data/exp81/*
 	nice -19 python exp/exp81.py data/exp81/
 
+# Try my XJW-based model instead of Jansen Rit
+# this first go had Ji_e/Ji_i at 0. 
+# and had no gain effect.
+exp82:
+	-mkdir data/exp82
+	-rm data/exp82/*
+	nice -19 python exp/exp82.py data/exp82/
+
+# clone of 82 but exploring Ji_e/_i
+# (just in case; almost certainly isn't
+# going to help)
+exp83:
+	-mkdir data/exp83
+	-rm data/exp83/*
+	nice -19 python exp/exp83.py data/exp83/

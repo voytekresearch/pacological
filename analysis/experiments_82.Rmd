@@ -1,0 +1,263 @@
+---
+title: "Exp 82"
+author: "Erik J Peterson"
+date: "January 19, 2016"
+output: html_document
+---
+
+```{r helper_fns, echo=FALSE, fig.width=6, fig.height=4, echo=FALSE, warning=FALSE, message=FALSE}
+library(ggplot2)
+library(grid)
+library(gridExtra)
+library(plyr)
+library(dplyr)
+library(reshape)
+library(png)
+library(plyr)
+library(doParallel)
+library(tidyr)
+library(ggthemr)
+registerDoParallel(cores=10)
+
+path <- "/home/ejp/src/pacological/data/exp82/"
+```
+
+```{r, cache=FALSE}
+# Load all the metric data for this exp
+metrics <- NULL
+ks <- 0:19
+for (k in ks) {
+  files <- Sys.glob(paste(path, "xjw_*", k, "_metrics.csv", sep=""))
+  for(file in files){
+    metric <- read.table(file, sep=",", header=TRUE)
+    metric$trial <- rep(k, nrow(metric))
+    k <- k + 1  
+    metrics <- rbind(metrics, metric)
+    }  
+}
+rm(metric, files, file, k)
+```
+
+```{r}
+# Average trials
+metrics %>%
+  group_by(mode, Je_e, Je_i, Ji_e, Ji_i) %>%
+  summarise(I=mean(I), pac=mean(pac)) ->
+  metrics.m
+```
+
+# Results
+
+I and PAC as a function of c, A and B (at sigma = 0.2)
+
+## Overall
+
+```{r overall, fig.width=5, fig.height=3}
+# I
+p0a <- ggplot(data=metrics, aes(x=mode, y=I))  + geom_boxplot() + theme_classic()
+print(p0a)
+
+p0b <- ggplot(data=metrics.m, aes(x=mode, y=I))  + geom_boxplot() + theme_classic()
+print(p0b)
+
+p1a <- ggplot(data=metrics, aes(x=mode, y=I)) + geom_point(color="grey", alpha=0.6, size=2) + theme_classic()
+print(p1a)
+
+p1b <- ggplot(data=metrics, aes(x=mode, y=I, color=Je_e)) + geom_point(alpha=0.6, size=2) + theme_classic()
+print(p1b)
+
+p1c <- ggplot(data=metrics, aes(x=mode, y=I, color=Je_i)) + geom_point(alpha=0.6, size=2) + theme_classic()
+print(p1c)
+
+# p1d <- ggplot(data=metrics.m, aes(x=mode, y=I, color=Ji_e)) + geom_jitter(alpha=0.6, size=2) + theme_classic()
+# print(p1d)
+# 
+# p1e <- ggplot(data=metrics.m, aes(x=mode, y=I, color=Ji_i)) + geom_jitter(alpha=0.6, size=2) + theme_classic()
+# print(p1e)
+```
+
+## Average effect plotted by Js
+
+MI then PAC.
+
+```{r, eval=TRUE, js_drop, fig.width=12, fig.height=4}
+metrics.m %>%
+  filter(Ji_e == 0, Ji_e == 0) ->
+  metrics.m.drop
+# MI
+metrics.m.drop %>%
+  group_by(mode, Je_e) %>%
+  summarise(I=mean(I)) %>%
+  ggplot(aes(x=Je_e, y=I)) + geom_line() + geom_point() + theme_classic() + 
+  facet_grid(.~mode)  ->
+  p2a
+
+metrics.m.drop %>%
+  group_by(mode, Je_i) %>%
+  summarise(I=mean(I)) %>%
+  ggplot(aes(x=Je_i, y=I)) + geom_line() + geom_point() + theme_classic() + 
+  facet_grid(.~mode)  ->
+  p2b
+
+# PAC
+metrics.m.drop %>%
+  group_by(mode, Je_e) %>%
+  summarise(pac=mean(pac)) %>%
+  ggplot(aes(x=Je_e, y=pac)) + geom_line() + geom_point() + theme_classic() + 
+  facet_grid(.~mode)   ->
+  p3a
+
+metrics.m.drop %>%
+  group_by(mode, Je_i) %>%
+  summarise(pac=mean(pac)) %>%
+  ggplot(aes(x=Je_i, y=pac)) + geom_line() + geom_point() + theme_classic() + 
+  facet_grid(.~mode)   ->
+  p3b
+
+laym <- rbind(
+  c(1, 2),
+  c(3, 4)
+)
+grid.arrange(p2a, p2b, p3a, p3b, layout_matrix=laym)
+```
+
+```{r, js, eval=FALSE, echo=FALSE, fig.width=12, fig.height=4}
+# Keep Ji_
+# MI
+metrics.m %>%
+  group_by(mode, Je_e) %>%
+  summarise(I=mean(I)) %>%
+  ggplot(aes(x=Je_e, y=I)) + geom_line() + geom_point() + theme_classic() + 
+  facet_grid(.~mode)  ->
+  p2a
+
+metrics.m %>%
+  group_by(mode, Je_i) %>%
+  summarise(I=mean(I)) %>%
+  ggplot(aes(x=Je_i, y=I)) + geom_line() + geom_point() + theme_classic() + 
+  facet_grid(.~mode)  ->
+  p2b
+
+metrics.m %>%
+  group_by(mode, Ji_e) %>%
+  summarise(I=mean(I)) %>%
+  ggplot(aes(x=Ji_e, y=I)) + geom_line() + geom_point() + theme_classic() + 
+  facet_grid(.~mode)  ->
+  p2c
+
+metrics.m %>%
+  group_by(mode, Ji_i) %>%
+  summarise(I=mean(I)) %>%
+  ggplot(aes(x=Ji_i, y=I)) + geom_line() + geom_point() + theme_classic() + 
+  facet_grid(.~mode)  ->
+  p2d
+
+# PAC
+metrics.m %>%
+  group_by(mode, Je_e) %>%
+  summarise(pac=mean(pac)) %>%
+  ggplot(aes(x=Je_e, y=pac)) + geom_line() + geom_point() + theme_classic() + 
+  facet_grid(.~mode)   ->
+  p3a
+
+metrics.m %>%
+  group_by(mode, Je_i) %>%
+  summarise(pac=mean(pac)) %>%
+  ggplot(aes(x=Je_i, y=pac)) + geom_line() + geom_point() + theme_classic() + 
+  facet_grid(.~mode)   ->
+  p3b
+
+metrics.m %>%
+  group_by(mode, Ji_e) %>%
+  summarise(pac=mean(pac)) %>%
+  ggplot(aes(x=Ji_e, y=pac)) + geom_line() + geom_point() + theme_classic() + 
+  facet_grid(.~mode)   ->
+  p3c
+
+metrics.m %>%
+  group_by(mode, Ji_i) %>%
+  summarise(pac=mean(pac)) %>%
+  ggplot(aes(x=Ji_i, y=pac)) + geom_line() + geom_point() + theme_classic() + 
+  facet_grid(.~mode)   ->
+  p3d
+
+laym <- rbind(
+  c(1, 2, 3, 4),
+  c(5, 6, 7, 8)
+)
+grid.arrange(p2a, p2b, p2c, p2d, p3a, p3b, p3c, p3d, layout_matrix=laym)
+```
+
+# FI plots
+
+```{r, eval=TRUE}
+# change k to look at other seeds
+k <- 1
+
+# Load some tcs
+s1 <- paste("xjw_sigma-20.0_Js-0.0_0.0_0.0_0.0_", k, "_ys.csv", sep="")
+# s2 <- paste("xjw_sigma-20.0_Js-0.0_0.0_0.0_0.0_", k, "_ys.csv", sep="")
+# s3 <- paste("xjw_sigma-20.0_Js-0.0_0.0_0.0_0.0_", k, "_ys.csv", sep="")
+
+g1 <- paste("xjw_sigma-20.0_Js-1.0_1.0_0.0_0.0_", k, "_ys.csv", sep="")
+g2 <- paste("xjw_sigma-20.0_Js-2.0_2.0_0.0_0.0_", k, "_ys.csv", sep="")
+g3 <- paste("xjw_sigma-20.0_Js-3.0_3.0_0.0_0.0_", k, "_ys.csv", sep="")
+
+e1 <- paste("xjw_sigma-20.0_Js-1.0_0.0_0.0_0.0_", k, "_ys.csv", sep="")
+e2 <- paste("xjw_sigma-20.0_Js-2.0_0.0_0.0_0.0_", k, "_ys.csv", sep="")
+e3 <- paste("xjw_sigma-20.0_Js-3.0_0.0_0.0_0.0_", k, "_ys.csv", sep="")
+
+i1 <- paste("xjw_sigma-20.0_Js-0.0_1.0_0.0_0.0_", k, "_ys.csv", sep="")
+i2 <- paste("xjw_sigma-20.0_Js-0.0_2.0_0.0_0.0_", k, "_ys.csv", sep="")
+i3 <- paste("xjw_sigma-20.0_Js-0.0_3.0_0.0_0.0_", k, "_ys.csv", sep="")
+
+# files <- c(s1, s2, s3, 
+#            g1, g2, g3, 
+#            e1, e2, e3, 
+#            i1, i2, i3)
+# 
+# modes <- c("stim", "stim", "stim", 
+#            "gain", "gain", "gain", 
+#            "summed", "summed", "summed", 
+#            "silenced", "silenced", "silenced")
+
+files <- c(s1, g2, e2, i2)
+modes <- c("stim", "gain", "summed", "silenced")
+
+cnts <- 1:length(files)
+
+tcs <- NULL
+for(i in cnts){
+  file <- files[i]
+  mode <- modes[i]
+  print(file)
+  tc <- read.table(paste(path, file, sep="/"), sep=",", header=TRUE)
+  n <- nrow(tc)
+  tc$mode <- rep(mode, n)
+  tc$i <- rep(i, n)
+  
+  tcs <- rbind(tcs, tc)
+}
+rm(tc, file, i, mode, n)
+
+# and plot...
+p1 <- ggplot(data=tcs, aes(x=times, y=stim, color=mode)) + geom_line() + theme_classic() + ylim(0,100)
+p2 <- ggplot(data=tcs, aes(x=times, y=pac, color=mode)) + geom_line() + theme_classic() + ylim(0,100)
+p3 <- ggplot(data=tcs, aes(x=stim, y=pac, color=mode)) + geom_point() + theme_classic()
+grid.arrange(p1, p2, p3, nrow=3)
+```
+
+
+
+# Conclusions
+
+* No multiplicative effect for `gain`;
+* `silenced` was closest to `stim`
+* `gain` was next
+* But in all cases as `Je_e` and `Je_i` increase MI decreases.
+
+
+* How to put mass models into a stochastic gain modulated regime? 
+* Need a conductance-based model?
+
+
