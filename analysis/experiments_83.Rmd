@@ -1,7 +1,7 @@
 ---
-title: "Exp 82"
+title: "Exp 83"
 author: "Erik J Peterson"
-date: "January 19, 2016"
+date: "January 20, 2016"
 output: html_document
 ---
 
@@ -19,10 +19,10 @@ library(tidyr)
 library(ggthemr)
 registerDoParallel(cores=10)
 
-path <- "/home/ejp/src/pacological/data/exp82/"
+path <- "/home/ejp/src/pacological/data/exp83/"
 ```
 
-```{r, cache=TRUE}
+```{r, cache=FALSE}
 # Load all the metric data for this exp
 metrics <- NULL
 ks <- 0:19
@@ -68,11 +68,19 @@ print(p1b)
 
 p1c <- ggplot(data=metrics, aes(x=mode, y=I, color=Je_i)) + geom_point(alpha=0.6, size=2) + theme_classic()
 print(p1c)
+
+# p1d <- ggplot(data=metrics.m, aes(x=mode, y=I, color=Ji_e)) + geom_jitter(alpha=0.6, size=2) + theme_classic()
+# print(p1d)
+# 
+# p1e <- ggplot(data=metrics.m, aes(x=mode, y=I, color=Ji_i)) + geom_jitter(alpha=0.6, size=2) + theme_classic()
+# print(p1e)
 ```
 
 ## Average effect plotted by Js
 
 MI then PAC.
+
+### Drop Ji_e/_i not 0
 
 ```{r, eval=TRUE, js_drop, fig.width=12, fig.height=4}
 metrics.m %>%
@@ -113,6 +121,75 @@ laym <- rbind(
   c(3, 4)
 )
 grid.arrange(p2a, p2b, p3a, p3b, layout_matrix=laym)
+```
+
+### All Js
+
+```{r, js, eval=TRUE, echo=TRUE, fig.width=12, fig.height=4}
+# Keep Ji_
+# MI
+metrics.m %>%
+  group_by(mode, Je_e) %>%
+  summarise(I=mean(I)) %>%
+  ggplot(aes(x=Je_e, y=I)) + geom_line() + geom_point() + theme_classic() + 
+  facet_grid(.~mode)  ->
+  p2a
+
+metrics.m %>%
+  group_by(mode, Je_i) %>%
+  summarise(I=mean(I)) %>%
+  ggplot(aes(x=Je_i, y=I)) + geom_line() + geom_point() + theme_classic() + 
+  facet_grid(.~mode)  ->
+  p2b
+
+metrics.m %>%
+  group_by(mode, Ji_e) %>%
+  summarise(I=mean(I)) %>%
+  ggplot(aes(x=Ji_e, y=I)) + geom_line() + geom_point() + theme_classic() + 
+  facet_grid(.~mode)  ->
+  p2c
+
+metrics.m %>%
+  group_by(mode, Ji_i) %>%
+  summarise(I=mean(I)) %>%
+  ggplot(aes(x=Ji_i, y=I)) + geom_line() + geom_point() + theme_classic() + 
+  facet_grid(.~mode)  ->
+  p2d
+
+# PAC
+metrics.m %>%
+  group_by(mode, Je_e) %>%
+  summarise(pac=mean(pac)) %>%
+  ggplot(aes(x=Je_e, y=pac)) + geom_line() + geom_point() + theme_classic() + 
+  facet_grid(.~mode)   ->
+  p3a
+
+metrics.m %>%
+  group_by(mode, Je_i) %>%
+  summarise(pac=mean(pac)) %>%
+  ggplot(aes(x=Je_i, y=pac)) + geom_line() + geom_point() + theme_classic() + 
+  facet_grid(.~mode)   ->
+  p3b
+
+metrics.m %>%
+  group_by(mode, Ji_e) %>%
+  summarise(pac=mean(pac)) %>%
+  ggplot(aes(x=Ji_e, y=pac)) + geom_line() + geom_point() + theme_classic() + 
+  facet_grid(.~mode)   ->
+  p3c
+
+metrics.m %>%
+  group_by(mode, Ji_i) %>%
+  summarise(pac=mean(pac)) %>%
+  ggplot(aes(x=Ji_i, y=pac)) + geom_line() + geom_point() + theme_classic() + 
+  facet_grid(.~mode)   ->
+  p3d
+
+laym <- rbind(
+  c(1, 2, 3, 4),
+  c(5, 6, 7, 8)
+)
+grid.arrange(p2a, p2b, p2c, p2d, p3a, p3b, p3c, p3d, layout_matrix=laym)
 ```
 
 # FI plots
@@ -174,17 +251,4 @@ p3 <- ggplot(data=tcs, aes(x=stim, y=pac, color=mode)) + geom_point() + theme_cl
 grid.arrange(p1, p2, p3, nrow=3)
 ```
 
-
-
 # Conclusions
-
-* No multiplicative effect for `gain`;
-* `silenced` was closest to `stim`
-* `gain` was next
-* But in all cases as `Je_e` and `Je_i` increase MI decreases. The exception is `Je_i` in the `unbalanced` mode has small increases in MI.
-
-
-* How to put mass models into a stochastic gain modulated regime? 
-* Need a conductance-based model?
-
-
