@@ -532,3 +532,32 @@ exp210:
 	-mkdir data/exp210
 	-rm data/exp210/*
 	nice -19 python exp/exp210.py data/exp210/
+
+# 210 doesn't look mutliplicative. Back to basics for fitz. No f, and
+# repeat the classic, then favoring re then ri
+
+# Classic Reyes for Ftiz
+exp211:
+	-mkdir data/exp211
+	-rm data/exp211/*
+	nice -19 python exp/exp211.py data/exp211/
+
+# Classic for Fitzhugh favoring re
+exp212:
+	-mkdir data/exp212
+	-rm data/exp212/*
+	nice -19 python exp/exp212.py data/exp212/
+
+# Classic for Fitzhugh favoring ri
+exp213:
+	-mkdir data/exp213
+	-rm data/exp213/*
+	nice -19 python exp/exp213.py data/exp213/
+
+# HH neuron, classic testing (f=0)
+# Balanced, excess re then ri 
+# (this time all in one exp file)
+exp214:
+	-mkdir data/exp214
+	-rm data/exp214/*
+	nice -19 python exp/exp214.py data/exp214/
