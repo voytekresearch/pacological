@@ -40,7 +40,7 @@ for i in range(len(Is)):
             rate.append(spikes.t_[:].shape[0] / t)
             
             M_g.append(np.mean(traces.g_e_[0] + traces.g_i_[0]))
-            M_v.append(np.mean(traces.v_[0]))
+            M_v.append(np.mean(traces.V_[0]))
         
         rates[i, j] = np.mean(rate)
         gs[i, j] = np.mean(M_g)
@@ -49,7 +49,7 @@ for i in range(len(Is)):
     print(I)
     
 save_hdfz(os.path.join(path, 'classic'), Is=Is, rates=rates, gs=gs,
-        vs=vs, xfactors=xfactors)
+        vs=vs, xfactors=xfactors, t=t, n_trial=n_trial, f=f)
 
 # --
 print('re')
@@ -72,7 +72,7 @@ for i in range(len(Is)):
             rate.append(spikes.t_[:].shape[0] / t)
             
             M_g.append(np.mean(traces.g_e_[0] + traces.g_i_[0]))
-            M_v.append(np.mean(traces.v_[0]))
+            M_v.append(np.mean(traces.V_[0]))
         
         rates[i, j] = np.mean(rate)
         gs[i, j] = np.mean(M_g)
@@ -81,7 +81,7 @@ for i in range(len(Is)):
     print(I)
     
 save_hdfz(os.path.join(path, 're'), Is=Is, rates=rates, gs=gs,
-        vs=vs, xfactors=xfactors)
+        vs=vs, xfactors=xfactors, t=t, n_trial=n_trial, f=f)
 
 # --
 print('ri')
@@ -104,7 +104,7 @@ for i in range(len(Is)):
             rate.append(spikes.t_[:].shape[0] / t)
             
             M_g.append(np.mean(traces.g_e_[0] + traces.g_i_[0]))
-            M_v.append(np.mean(traces.v_[0]))
+            M_v.append(np.mean(traces.V_[0]))
         
         rates[i, j] = np.mean(rate)
         gs[i, j] = np.mean(M_g)
@@ -113,5 +113,5 @@ for i in range(len(Is)):
     print(I)
     
 save_hdfz(os.path.join(path, 'ri'), Is=Is, rates=rates, gs=gs,
-        vs=vs, xfactors=xfactors)
+        vs=vs, xfactors=xfactors, t=t, n_trial=n_trial, f=f)
 
