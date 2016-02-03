@@ -6,13 +6,13 @@ from brian2 import *
 from numpy.random import uniform, random_integers, lognormal
 """Gain modulation in a FitzHugh-Nagumo neuron. 
 
-Parameters taken from Chance, Abbott and Rayes, Neuron, 2002. and framework
-for the model was based on Vogels, T.P. & Abbott, L.F., 2005. The Journal of 
-neuroscience.
-"""
+Parameters for balance taken from Chance, Abbott and Rayes, Neuron, 2002."""
 
 def gain(time, r_e=135, r_i=135, w_e=.1, w_i=.4, I_drive=0, f=0, 
         verbose=True):
+
+    time_step = 0.01 * ms
+    defaultclock.dt = time_step
 
     # -- params
     # User 
