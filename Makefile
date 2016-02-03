@@ -456,3 +456,79 @@ exp83:
 	-mkdir data/exp83
 	-rm data/exp83/*
 	nice -19 python exp/exp83.py data/exp83/
+
+
+# =========================================================================
+# LIF simulations =========================================================
+# =========================================================================
+# The classic model
+exp200:
+	-mkdir data/exp200
+	-rm data/exp200/*
+	nice -19 python exp/exp200.py data/exp200/
+
+# Classic but oscillating
+exp201:
+	-mkdir data/exp201
+	-rm data/exp201/*
+	nice -19 python exp/exp201.py data/exp201/
+
+# oscillating favoring re
+exp202:
+	-mkdir data/exp202
+	-rm data/exp202/*
+	nice -19 python exp/exp202.py data/exp202/
+
+# oscillating favoring ri
+exp203:
+	-mkdir data/exp203
+	-rm data/exp203/*
+	nice -19 python exp/exp203.py data/exp203/
+
+# Compare 1X, 0.5X and oscllation
+exp204:
+	-mkdir data/exp204
+	-rm data/exp204/*
+	nice -19 python exp/exp204.py data/exp204/
+
+# Look at effect of oscllation f, from 1-60 Hz
+# (uses 6 cores)
+exp205:
+	-mkdir data/exp205
+	-rm data/exp205/*
+	nice -19 python exp/exp205.py data/exp205/
+
+# Play with rate balance (1.6*re, 0.4*ri)
+exp206:
+	-mkdir data/exp206
+	-rm data/exp206/*
+	nice -19 python exp/exp206.py data/exp206/
+
+# Partial rereun of 205 to explore weaker, less than
+# 1X background activity.
+exp207:
+	-mkdir data/exp207
+	-rm data/exp207/*
+	nice -19 python exp/exp207.py data/exp207/
+
+# exploring 205 from 5X to 9 with 5 as constant
+# i.e. very strong background
+exp208:
+	-mkdir data/exp208
+	-rm data/exp208/*
+	nice -19 python exp/exp208.py data/exp208/
+
+# Repeat of 205 but with t = 5 to ensure
+# the slow oscillations effects aren't an artifact 
+# of few cycle counts
+exp209:
+	-mkdir data/exp209
+	-rm data/exp209/*
+	nice -19 python exp/exp209.py data/exp209/
+
+# Repeat of Exp205 using the Fitzhugh-Ganumo neuron
+# (and a less dense I and xfactor sampling)
+exp210:
+	-mkdir data/exp210
+	-rm data/exp210/*
+	nice -19 python exp/exp210.py data/exp210/
