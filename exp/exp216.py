@@ -1,4 +1,4 @@
-"""Balance, using an HH neuron"""
+"""Balance, excess ri using an HH neuron"""
 import os
 import sys
 from pacological.hh import gain, exp
@@ -20,7 +20,7 @@ xfactors = [1, 2, 3, 4, 5]
 n_trial = 10
 
 # --
-print('classic')
+print('ri')
 rates = np.zeros((len(Is), len(xfactors)))
 gs = np.zeros((len(Is), len(xfactors)))
 vs = np.zeros((len(Is), len(xfactors)))
@@ -32,7 +32,7 @@ for i in range(len(Is)):
             I = Is[i]
             xfactor = xfactors[j]
 
-            res = exp(t, I, xfactor, f=f)
+            res = exp(t, I, (1, xfactor), f=f)
 
             spikes = res['spikes']
             traces = res['traces']
@@ -48,7 +48,6 @@ for i in range(len(Is)):
         
     print(I)
     
-save_hdfz(os.path.join(path, 'classic'), Is=Is, rates=rates, gs=gs,
+save_hdfz(os.path.join(path, 'ri'), Is=Is, rates=rates, gs=gs,
         vs=vs, xfactors=xfactors, t=t, n_trial=n_trial, f=f)
-
 

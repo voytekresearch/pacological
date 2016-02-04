@@ -561,3 +561,13 @@ exp214:
 	-mkdir data/exp214
 	-rm data/exp214/*
 	nice -19 python exp/exp214.py data/exp214/
+
+exp215:
+	-mkdir data/exp215
+	-rm data/exp215/*
+	nice -19 python exp/exp215.py data/exp215/
+
+exp216:
+	-mkdir data/exp216
+	-rm data/exp216/*
+	nice -19 python exp/exp216.py data/exp216/
