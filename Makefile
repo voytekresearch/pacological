@@ -597,3 +597,9 @@ exp220:
 	-mkdir data/exp220
 	-rm data/exp220/*
 	nice -19 python exp/exp220.py data/exp220/
+
+# Setting the baseline LIF data for zandt mass system
+exp221:
+	-mkdir data/exp221
+	-rm data/exp221/*
+	nice -19 python exp/exp221.py data/exp221/

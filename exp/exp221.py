@@ -9,28 +9,25 @@ from convenience.numpy import save_hdfz
 
 
 path = sys.argv[1]
-n_jobs = 12
+n_jobs = 10
 
 t = 2
 n_trial = 30
 
-Imax = # ??
-Is = np.linspace(0, Imax, 50)
+Is = np.linspace(0, 300, 100)
 xfactors = [1, ]
 
-w = 100 
+w = 100
 k = 5
+r = 400
 
 # --
-# Do 1X first, (put it in the 0th column for every f)
 rate1x = []
 for i, I in enumerate(Is):
     rtmp = []
 
     def fn(trial):  # Closes globals
-        # reduce w_e/i and so sigma compared to exp217 by an
-        # order of magnitude
-        res = exp(t, I, 1, f=0, w_e=k * w, w_i=k * w * 4)
+        res = exp(t, I, 1, f=0, r=r, w_e=k * w, w_i=k * w * 4)
         spikes = res['spikes']
         return np.mean(spikes.t_[:].shape[0] / t)
 
@@ -42,6 +39,6 @@ for i, I in enumerate(Is):
     print(I)
 rate1x = np.asarray(rate1x)
 
-save_hdfz(os.path.join(path, 'limits_{}'.format(f)),
+save_hdfz(os.path.join(path, 'baseline_HH'),
           Is=Is, rates=rate1x, xfactors=xfactors,
-          f=f, t=t, n_trial=n_trial)
+          f=f, t=t, n_trial=n_trial, w=w, k=k, r=r)
