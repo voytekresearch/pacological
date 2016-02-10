@@ -571,3 +571,21 @@ exp216:
 	-mkdir data/exp216
 	-rm data/exp216/*
 	nice -19 python exp/exp216.py data/exp216/
+
+# HH and oscillation, from 1-60 Hz
+exp217:
+	-mkdir data/exp217
+	-rm data/exp217/*
+	nice -19 python exp/exp217.py data/exp217/
+
+# HH with reduced variance by 10
+exp218:
+	-mkdir data/exp218
+	-rm data/exp218/*
+	nice -19 python exp/exp218.py data/exp218/
+
+# HH with reduced variance by 2
+exp219:
+	-mkdir data/exp219
+	-rm data/exp219/*
+	nice -19 python exp/exp219.py data/exp219/

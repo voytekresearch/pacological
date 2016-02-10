@@ -17,7 +17,7 @@ t = 4
 Is = np.arange(0, 1.1, .1)
 xfactors = [0, 1, 2, 3, 4, 5]
 
-n_trial = 20
+n_trial = 10
 
 rates = np.zeros((len(Is), len(xfactors)))
 gs = np.zeros((len(Is), len(xfactors)))
