@@ -19,11 +19,13 @@ def gain(time, r_e=675, r_i=675, w_e=40.0, w_i=160.0, I_drive=0, f=0,
     w_e = w_e * usiemens  
     w_i = w_i * usiemens
 
-    r_e = r_e * Hz  
-    r_i = r_i * Hz
-
     # Fixed
-    N = 1
+    # The PoissonGroup have max rates limit, which can be 
+    # avoided by 'stacking' groups
+    N = 10  
+
+    r_e = (r_e / N) * Hz  
+    r_i = (r_i / N) * Hz
 
     Et = 20 * mvolt
 
@@ -45,7 +47,7 @@ def gain(time, r_e=675, r_i=675, w_e=40.0, w_i=160.0, I_drive=0, f=0,
 
     V_Na = 50 * mV
     V_K = -100 * mV
-    V_l = -75 * mV  # 67 mV 
+    V_l = -67 * mV  # 67 mV 
  
     V_i = -80 * mV
     V_e = 0 * mV

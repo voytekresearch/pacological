@@ -14,24 +14,23 @@ n_jobs = 10
 t = 2
 n_trial = 10
 
-Is = np.linspace(0, 1, 8)
-xfactors = [1, 2, 3, 4, 5]
-fs = [5, 10, 15, 20, 25, 30, 35, 40]
+Is = np.linspace(0, 300, 20)
+xfactors = [1, 2, 3, 4]
+fs = [5, 8, 10, 12, 15, 20, 25, 30, 35]
 
 w = 100
 k = 5
+r = 400
 
 # --
-# Do 1X first, (put it in the 0th column for every f)
+# Do 1X first
 print("1X")
 rate1x = []
 for i, I in enumerate(Is):
     rtmp = []
 
-    def fn(trial):  # Closes globals
-        # reduce w_e/i and so sigma compared to exp217 by an
-        # order of magnitude
-        res = exp(t, I, 1, f=0, w_e=k * w, w_i=k * w * 4)
+    def fn(trial):  
+        res = exp(t, I, 1, f=0, r=r, w_e=k * w, w_i=k * w * 4)
         spikes = res['spikes']
         return np.mean(spikes.t_[:].shape[0] / t)
 
@@ -57,7 +56,7 @@ for f in fs:
         for j, xfactor in enumerate(xfactors):
 
             def fn(trial):  # Closes globals
-                res = exp(t, I, xfactor, f=f, w_e=k * w, w_i=k * w * 4)
+                res = exp(t, I, xfactor, f=f, r=r, w_e=k * w, w_i=k * w * 4)
                 spikes = res['spikes']
                 return np.mean(spikes.t_[:].shape[0] / t)
 
