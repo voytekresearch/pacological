@@ -8,7 +8,7 @@ from numpy.random import uniform, random_integers, lognormal
 Parameters for balance taken from Chance, Abbott and Rayes, Neuron, 2002. 
 """
 
-def gain(time, r_e=135, r_i=135, w_e=40.0, w_i=160.0, I_drive=0, f=0, 
+def gain(time, r_e=675, r_i=675, w_e=40.0, w_i=160.0, I_drive=0, f=0, 
         verbose=True):
 
     time_step = 0.01 * ms
@@ -26,8 +26,8 @@ def gain(time, r_e=135, r_i=135, w_e=40.0, w_i=160.0, I_drive=0, f=0,
     N = 1
 
     Et = 20 * mvolt
-    Er = -65 * mvolt
 
+    # Synapse
     Ee = 0 * mvolt
     Ei = -80 * mvolt
 
@@ -38,14 +38,14 @@ def gain(time, r_e=135, r_i=135, w_e=40.0, w_i=160.0, I_drive=0, f=0,
     # HH specific
     Cm = 1 * uF  # /cm2
 
-    w_m = 0 * msiemens  # Read ref 47 to get value
+    w_m = 0 * msiemens 
     g_Na = 100 * msiemens
     g_K = 80 * msiemens
     g_l = 0.1 * msiemens
 
     V_Na = 50 * mV
     V_K = -100 * mV
-    V_l = -67 * mV
+    V_l = -75 * mV  # 67 mV 
  
     V_i = -80 * mV
     V_e = 0 * mV
@@ -112,7 +112,7 @@ def gain(time, r_e=135, r_i=135, w_e=40.0, w_i=160.0, I_drive=0, f=0,
     return {'spikes' : spikes_e, 'traces' : traces_e}
 
 
-def exp(t, I, xfactor, f=0, r=135, w_e=40.0, w_i=160.0):
+def exp(t, I, xfactor, f=0, r=675, w_e=40.0, w_i=160.0):
     """Experiments in balance.
     
     Params
