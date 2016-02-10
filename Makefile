@@ -589,3 +589,11 @@ exp219:
 	-mkdir data/exp219
 	-rm data/exp219/*
 	nice -19 python exp/exp219.py data/exp219/
+
+# Retuned HH to have a Vm variance more 
+# like the LIF neuron. Otherwise this is a rerun of 
+# exp219/8
+exp220:
+	-mkdir data/exp220
+	-rm data/exp220/*
+	nice -19 python exp/exp220.py data/exp220/

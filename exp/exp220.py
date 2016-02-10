@@ -9,7 +9,7 @@ from convenience.numpy import save_hdfz
 
 
 path = sys.argv[1]
-n_jobs = 6
+n_jobs = 10
 
 t = 2
 n_trial = 10
@@ -18,8 +18,8 @@ Is = np.linspace(0, 1, 8)
 xfactors = [1, 2, 3, 4, 5]
 fs = [5, 10, 15, 20, 25, 30, 35, 40]
 
-w = 100 * 5
-k = 10
+w = 100
+k = 5
 
 # --
 # Do 1X first, (put it in the 0th column for every f)
