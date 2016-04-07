@@ -462,144 +462,198 @@ exp83:
 # LIF simulations =========================================================
 # =========================================================================
 # The classic model
-exp200:
-	-mkdir data/exp200
-	-rm data/exp200/*
-	nice -19 python exp/exp200.py data/exp200/
-
-# Classic but oscillating
-exp201:
-	-mkdir data/exp201
-	-rm data/exp201/*
-	nice -19 python exp/exp201.py data/exp201/
-
-# oscillating favoring re
-exp202:
-	-mkdir data/exp202
-	-rm data/exp202/*
-	nice -19 python exp/exp202.py data/exp202/
-
-# oscillating favoring ri
-exp203:
-	-mkdir data/exp203
-	-rm data/exp203/*
-	nice -19 python exp/exp203.py data/exp203/
-
-# Compare 1X, 0.5X and oscllation
-exp204:
-	-mkdir data/exp204
-	-rm data/exp204/*
-	nice -19 python exp/exp204.py data/exp204/
-
-# Look at effect of oscllation f, from 1-60 Hz
-# (uses 6 cores)
-exp205:
-	-mkdir data/exp205
-	-rm data/exp205/*
-	nice -19 python exp/exp205.py data/exp205/
-
-# Play with rate balance (1.6*re, 0.4*ri)
-exp206:
-	-mkdir data/exp206
-	-rm data/exp206/*
-	nice -19 python exp/exp206.py data/exp206/
-
-# Partial rereun of 205 to explore weaker, less than
-# 1X background activity.
-exp207:
-	-mkdir data/exp207
-	-rm data/exp207/*
-	nice -19 python exp/exp207.py data/exp207/
-
-# exploring 205 from 5X to 9 with 5 as constant
-# i.e. very strong background
-exp208:
-	-mkdir data/exp208
-	-rm data/exp208/*
-	nice -19 python exp/exp208.py data/exp208/
-
-# Repeat of 205 but with t = 5 to ensure
-# the slow oscillations effects aren't an artifact 
-# of few cycle counts
-exp209:
-	-mkdir data/exp209
-	-rm data/exp209/*
-	nice -19 python exp/exp209.py data/exp209/
-
-# Repeat of Exp205 using the Fitzhugh-Ganumo neuron
-# (and a less dense I and xfactor sampling)
-exp210:
-	-mkdir data/exp210
-	-rm data/exp210/*
-	nice -19 python exp/exp210.py data/exp210/
-
-# 210 doesn't look mutliplicative. Back to basics for fitz. No f, and
-# repeat the classic, then favoring re then ri
-
-# Classic Reyes for Ftiz
-exp211:
-	-mkdir data/exp211
-	-rm data/exp211/*
-	nice -19 python exp/exp211.py data/exp211/
-
-# Classic for Fitzhugh favoring re
-exp212:
-	-mkdir data/exp212
-	-rm data/exp212/*
-	nice -19 python exp/exp212.py data/exp212/
-
-# Classic for Fitzhugh favoring ri
-exp213:
-	-mkdir data/exp213
-	-rm data/exp213/*
-	nice -19 python exp/exp213.py data/exp213/
-
-# HH neuron, classic testing (f=0)
-# Balanced, excess re then ri 
-# (this time all in one exp file)
-exp214:
-	-mkdir data/exp214
-	-rm data/exp214/*
-	nice -19 python exp/exp214.py data/exp214/
-
-exp215:
-	-mkdir data/exp215
-	-rm data/exp215/*
-	nice -19 python exp/exp215.py data/exp215/
-
-exp216:
-	-mkdir data/exp216
-	-rm data/exp216/*
-	nice -19 python exp/exp216.py data/exp216/
-
-# HH and oscillation, from 1-60 Hz
-exp217:
-	-mkdir data/exp217
-	-rm data/exp217/*
-	nice -19 python exp/exp217.py data/exp217/
-
-# HH with reduced variance by 10
-exp218:
-	-mkdir data/exp218
-	-rm data/exp218/*
-	nice -19 python exp/exp218.py data/exp218/
-
-# HH with reduced variance by 2
-exp219:
-	-mkdir data/exp219
-	-rm data/exp219/*
-	nice -19 python exp/exp219.py data/exp219/
+# exp200:
+# 	-mkdir data/exp200
+# 	-rm data/exp200/*
+# 	nice -19 python exp/exp200.py data/exp200/
+#
+# # Classic but oscillating
+# exp201:
+# 	-mkdir data/exp201
+# 	-rm data/exp201/*
+# 	nice -19 python exp/exp201.py data/exp201/
+#
+# # oscillating favoring re
+# exp202:
+# 	-mkdir data/exp202
+# 	-rm data/exp202/*
+# 	nice -19 python exp/exp202.py data/exp202/
+#
+# # oscillating favoring ri
+# exp203:
+# 	-mkdir data/exp203
+# 	-rm data/exp203/*
+# 	nice -19 python exp/exp203.py data/exp203/
+#
+# # Compare 1X, 0.5X and oscllation
+# exp204:
+# 	-mkdir data/exp204
+# 	-rm data/exp204/*
+# 	nice -19 python exp/exp204.py data/exp204/
+#
+# # Look at effect of oscllation f, from 1-60 Hz
+# # (uses 6 cores)
+# exp205:
+# 	-mkdir data/exp205
+# 	-rm data/exp205/*
+# 	nice -19 python exp/exp205.py data/exp205/
+#
+# # Play with rate balance (1.6*re, 0.4*ri)
+# exp206:
+# 	-mkdir data/exp206
+# 	-rm data/exp206/*
+# 	nice -19 python exp/exp206.py data/exp206/
+#
+# # Partial rereun of 205 to explore weaker, less than
+# # 1X background activity.
+# exp207:
+# 	-mkdir data/exp207
+# 	-rm data/exp207/*
+# 	nice -19 python exp/exp207.py data/exp207/
+#
+# # exploring 205 from 5X to 9 with 5 as constant
+# # i.e. very strong background
+# exp208:
+# 	-mkdir data/exp208
+# 	-rm data/exp208/*
+# 	nice -19 python exp/exp208.py data/exp208/
+#
+# # Repeat of 205 but with t = 5 to ensure
+# # the slow oscillations effects aren't an artifact 
+# # of few cycle counts
+# exp209:
+# 	-mkdir data/exp209
+# 	-rm data/exp209/*
+# 	nice -19 python exp/exp209.py data/exp209/
+#
+# # Repeat of Exp205 using the Fitzhugh-Ganumo neuron
+# # (and a less dense I and xfactor sampling)
+# exp210:
+# 	-mkdir data/exp210
+# 	-rm data/exp210/*
+# 	nice -19 python exp/exp210.py data/exp210/
+#
+# # 210 doesn't look mutliplicative. Back to basics for fitz. No f, and
+# # repeat the classic, then favoring re then ri
+#
+# # Classic Reyes for Ftiz
+# exp211:
+# 	-mkdir data/exp211
+# 	-rm data/exp211/*
+# 	nice -19 python exp/exp211.py data/exp211/
+#
+# # Classic for Fitzhugh favoring re
+# exp212:
+# 	-mkdir data/exp212
+# 	-rm data/exp212/*
+# 	nice -19 python exp/exp212.py data/exp212/
+#
+# # Classic for Fitzhugh favoring ri
+# exp213:
+# 	-mkdir data/exp213
+# 	-rm data/exp213/*
+# 	nice -19 python exp/exp213.py data/exp213/
+#
+# # HH neuron, classic testing (f=0)
+# # Balanced, excess re then ri 
+# # (this time all in one exp file)
+# # fd2a6fd24db676d95eff772182f7206f4892ed51
+# exp214:
+# 	-mkdir data/exp214
+# 	-rm data/exp214/*
+# 	nice -19 python exp/exp214.py data/exp214/
+#
+# exp215:
+# 	-mkdir data/exp215
+# 	-rm data/exp215/*
+# 	nice -19 python exp/exp215.py data/exp215/
+#
+# exp216:
+# 	-mkdir data/exp216
+# 	-rm data/exp216/*
+# 	nice -19 python exp/exp216.py data/exp216/
+#
+# # HH and oscillation, from 1-60 Hz
+# exp217:
+# 	-mkdir data/exp217
+# 	-rm data/exp217/*
+# 	nice -19 python exp/exp217.py data/exp217/
+#
+# # HH with reduced variance by 10
+# exp218:
+# 	-mkdir data/exp218
+# 	-rm data/exp218/*
+# 	nice -19 python exp/exp218.py data/exp218/
+#
+# # HH with reduced variance by 2
+# exp219:
+# 	-mkdir data/exp219
+# 	-rm data/exp219/*
+# 	nice -19 python exp/exp219.py data/exp219/
 
 # Retuned HH to have a Vm variance more 
 # like the LIF neuron. Otherwise this is a rerun of 
 # exp219/8
-exp220:
-	-mkdir data/exp220
-	-rm data/exp220/*
-	nice -19 python exp/exp220.py data/exp220/
+
+# exp220:
+# 	-mkdir data/exp220
+# 	-rm data/exp220/*
+# 	nice -19 python exp/exp220.py data/exp220/
 
 # Setting the baseline LIF data for zandt mass system
+# 121e59944b063a90a8471a7060f3149aa166cd01
 exp221:
 	-mkdir data/exp221
 	-rm data/exp221/*
 	nice -19 python exp/exp221.py data/exp221/
+
+# Rerun of Exp220 but with Is spanning a smaller
+# range, 1-50 rather than 1-300. 
+exp222:
+	-mkdir data/exp222
+	-rm data/exp222/*
+	nice -19 python exp/exp222.py data/exp222/
+
+# Rerun of 222 but halving the background 1x rate
+# (i.e. how do these hold up to scale changes)
+exp223:
+	-mkdir data/exp223
+	-rm data/exp223/*
+	nice -19 python exp/exp223.py data/exp223/
+
+# NEXT TO RUN
+# Exploring several FI curves, with background and w_m
+# and not
+exp224:
+	-mkdir data/exp224
+	-rm data/exp224/*
+	nice -19 python exp/exp224.py data/exp224/
+
+# FI curve, 1X
+exp225:
+	-mkdir data/exp225
+	-rm data/exp225/*
+	nice -19 python exp/exp225.py data/exp225/
+
+# Rerun of 204 (LIF) with constant 20 Hz background
+# just so the bottom of the oscillation isn't OX
+# which doesn't make much bio-sense.
+exp226:
+	-mkdir data/exp226
+	-rm data/exp226/*
+	nice -19 python exp/exp226.py data/exp226/
+
+# =========================================================================
+# gNNM experiments
+# Generic E-I interaction (aka hippocampus)
+exp300:
+	-mkdir data/exp300
+	-rm data/exp300/*
+	nice -19 python exp/exp300.py data/exp300/
+
+# Dense parameter sampling of exp300, added trials as well
+exp301:
+	-mkdir data/exp301
+	-rm data/exp301/*
+	nice -19 python exp/exp301.py data/exp301/ | tee data/exp301/log
+	
