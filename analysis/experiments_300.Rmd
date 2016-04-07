@@ -1,0 +1,161 @@
+```{r helper_fns, echo=FALSE, fig.width=6, fig.height=4, echo=FALSE, warning=FALSE, message=FALSE}
+library(ggplot2)
+library(grid)
+library(gridExtra)
+library(plyr)
+library(dplyr)
+library(reshape)
+library(png)
+library(plyr)
+library(doParallel)
+library(tidyr)
+library(ggthemr)
+registerDoParallel(cores=10)
+
+path <- "/home/ejp/src/pacological/data/exp300/"
+```
+
+```{r}
+# load summary data
+dat <- read.table(paste(path, "summary.csv", sep=""), sep=",", header=TRUE)
+dat %>% mutate(delta_MI = MI - MI_base) -> dat
+
+# drop the large stim, it did weird things
+dat %>% filter(ds < 5e-7) -> dat
+
+# select only the slow frequencies
+dat %>% filter(fs < 30) -> dat
+
+# Looking at only `w_ee = 0`.
+dat %>% filter(w_ee == 0) -> dat
+```
+
+# Fraction of parameters that give postive MI
+
+```{r}
+n <- nrow(dat)
+frac <- data.frame(
+  all = sum(dat$delta_MI > 0) / n,
+  "f_4" = sum((filter(dat, fs == 4))$delta_MI > 0) / nrow(filter(dat, fs == 4)),
+  "f_13" = sum((filter(dat, fs == 13))$delta_MI > 0) / nrow(filter(dat, fs == 13)),
+  "f_22" = sum((filter(dat, fs == 22))$delta_MI > 0) / nrow(filter(dat, fs == 22))
+)
+print(frac)
+```
+
+* i.e most.
+
+# Top 10 models (for middle noise level)
+## Overall
+
+```{r}
+dat %>% filter(sigma == 100) %>% 
+  select(code, fs, w_ee, w_ei, w_ie, w_ii, delta_MI) -> 
+  sdat
+head(sdat[order(sdat$delta_MI, decreasing = TRUE),], n = 10)
+```
+
+## By frequency
+### 4 Hz
+
+```{r}
+dat %>% 
+  filter(sigma == 100, fs == 4) %>% 
+  select(code, fs, w_ee, w_ei, w_ie, w_ii, delta_MI) -> 
+  sdat
+head(sdat[order(sdat$delta_MI, decreasing = TRUE),], n = 10)
+```
+
+### 13 Hz
+
+```{r}
+dat %>% 
+  filter(sigma == 100, fs == 13) %>% 
+  select(code, fs, w_ee, w_ei, w_ie, w_ii, delta_MI) -> 
+  sdat
+head(sdat[order(sdat$delta_MI, decreasing = TRUE),], n = 10)
+```
+
+### 22 Hz
+
+```{r}
+dat %>% 
+  filter(sigma == 100, fs == 22) %>% 
+  select(code, fs, w_ee, w_ei, w_ie, w_ii, delta_MI) -> 
+  sdat
+head(sdat[order(sdat$delta_MI, decreasing = TRUE),], n = 10)
+```
+
+
+# Visualizing MI 
+## Overall
+
+```{r}
+dat %>%
+  filter() %>%
+  ggplot(aes(x=fs, y=delta_MI, group=fs)) + geom_boxplot() + geom_hline(yintercept = 0, color="grey") + theme_classic() + facet_grid(.~sigma) + xlab("Oscillation frequency")
+```
+
+## MI_base scales with stim noise
+
+```{r}
+dat %>%
+  filter() %>%
+  ggplot(aes(x=fs, y=MI_base, group=fs)) + geom_boxplot() + geom_hline(yintercept = 0, color="grey") + theme_classic() + facet_grid(.~sigma) + xlab("Oscillation frequency")
+```
+
+## delta_MI by network parameter
+### w_ee
+
+```{r}
+dat %>%
+  filter() %>%
+  ggplot(aes(x=w_ee, y=delta_MI, group=interaction(w_ee, fs))) + geom_boxplot() + geom_hline(yintercept = 0, color="grey") + theme_classic() + facet_grid(sigma~fs) 
+```
+
+### w_ei
+
+```{r}
+dat %>%
+  filter() %>%
+  ggplot(aes(x=w_ei, y=delta_MI, group=interaction(w_ei, fs))) + geom_boxplot() + geom_hline(yintercept = 0, color="grey") + theme_classic() + facet_grid(sigma~fs) 
+```
+
+### w_ie
+
+```{r}
+dat %>%
+  filter() %>%
+  ggplot(aes(x=w_ie, y=delta_MI, group=interaction(w_ie, fs))) + geom_boxplot() + geom_hline(yintercept = 0, color="grey") + theme_classic() + facet_grid(sigma~fs) 
+```
+
+### w_ii
+
+```{r}
+dat %>%
+  filter() %>%
+  ggplot(aes(x=w_ii, y=delta_MI, group=interaction(w_ii, fs))) + geom_boxplot() + geom_hline(yintercept = 0, color="grey") + theme_classic() + facet_grid(sigma~fs) 
+```
+
+#### Delta w_ei - w_ie compared to delta MI
+
+Combine across all `sigma`
+
+```{r, fig.height=5, fig.width=3}
+dat %>%
+  filter(fs == 4) %>%
+  ggplot(aes(x=w_ei - w_ie, y=delta_MI, group=w_ei - w_ie)) + geom_boxplot() + geom_vline(xintercept=0, color="grey") + geom_hline(yintercept=0, color="grey") + ylim(-1, 1) + theme_bw() + xlab("") + ggtitle("4 Hz oscillation freq.") -> p1
+
+dat %>%
+  filter(fs == 13) %>%
+  ggplot(aes(x=w_ei - w_ie, y=delta_MI, group=w_ei - w_ie)) + geom_boxplot() + geom_vline(xintercept=0, color="grey") + geom_hline(yintercept=0, color="grey") + ylim(-1, 1) + theme_bw() + ylab("") + xlab("") + ggtitle("13 Hz oscillation freq.")-> p2
+
+dat %>%
+  filter(fs == 22) %>%
+  ggplot(aes(x=w_ei - w_ie, y=delta_MI, group=w_ei - w_ie)) + geom_boxplot() + geom_vline(xintercept=0, color="grey") + geom_hline(yintercept=0, color="grey") + ylim(-1, 1) + theme_bw() + ylab("") + ggtitle("22 Hz oscillation freq.")-> p3
+
+grid.arrange(p1, p2, p3)
+```
+
+* When `w_ie` dominates strongly MI is decreased. This is the regime of ws which generates fast gamma oscillations.
+* This `w_ie` effect is somwhat independent of overall amplification. It persists even as the slow oscillation frequency increases.
