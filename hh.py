@@ -8,7 +8,7 @@ from numpy.random import uniform, random_integers, lognormal
 Parameters for balance taken from Chance, Abbott and Rayes, Neuron, 2002. 
 """
 
-def gain(time, r_e=675, r_i=675, w_e=40.0, w_i=160.0, I_drive=0, f=0, 
+def gain(time, r_e=675, r_i=675, w_e=40.0, w_i=160.0, w_m=0, I_drive=0, f=0, 
         verbose=True):
 
     time_step = 0.01 * ms
@@ -40,7 +40,7 @@ def gain(time, r_e=675, r_i=675, w_e=40.0, w_i=160.0, I_drive=0, f=0,
     # HH specific
     Cm = 1 * uF  # /cm2
 
-    w_m = 0 * msiemens 
+    w_m = w_m * msiemens 
     g_Na = 100 * msiemens
     g_K = 80 * msiemens
     g_l = 0.1 * msiemens
