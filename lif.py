@@ -11,7 +11,7 @@ neuroscience.
 """
 
 def gain(time, r_e=135, r_i=135, w_e=4, w_i=16, g_l=10, I_drive=0, f=0, 
-        verbose=True):
+        verbose=True, fixed=False):
 
     # -- params
     # User 
@@ -59,7 +59,7 @@ def gain(time, r_e=135, r_i=135, w_e=4, w_i=16, g_l=10, I_drive=0, f=0,
     else:
         P_be = PoissonGroup(N, r_e)
         P_bi = PoissonGroup(N, r_i)
-
+    
     # Our one neuron to gain control
     P_e = NeuronGroup(1, lif, threshold='v > Et', reset='v = Er',
         refractory=2 * ms)
@@ -71,6 +71,16 @@ def gain(time, r_e=135, r_i=135, w_e=4, w_i=16, g_l=10, I_drive=0, f=0,
     C_be.connect(True)
     C_bi = Synapses(P_bi, P_e, pre='g_i += w_i')
     C_bi.connect(True)
+
+    # Fixed background as well
+    if fixed:
+        P_fe = PoissonGroup(N, 50 * Hz)
+        P_fi = PoissonGroup(N, 50 * Hz)
+
+        C_fe = Synapses(P_fe, P_e, pre='g_e += w_e')
+        C_fe.connect(True)
+        C_fi = Synapses(P_fi, P_e, pre='g_i += w_i')
+        C_fi.connect(True)
 
     # Data acq
     spikes_e = SpikeMonitor(P_e)
@@ -85,7 +95,7 @@ def gain(time, r_e=135, r_i=135, w_e=4, w_i=16, g_l=10, I_drive=0, f=0,
     return {'spikes' : spikes_e, 'traces' : traces_e}
 
 
-def exp(t, I, xfactor, f=0, r=135, g_l=1.0):
+def exp(t, I, xfactor, f=0, r=135, g_l=1.0, fixed=False):
     """Experiments in balance.
     
     Params
@@ -127,7 +137,7 @@ def exp(t, I, xfactor, f=0, r=135, g_l=1.0):
                 w_e=w_e, w_i=w_i, 
                 g_l=g_l, I_drive=I,
                 f=f,
-                verbose=False)
+                verbose=False, fixed=fixed)
 
 
 if __name__ == "__main__":
