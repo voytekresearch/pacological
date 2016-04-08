@@ -248,7 +248,7 @@ if __name__ == "__main__":
         ys = itoint(layers, g, ys_ts, times)
 
         np.savez(
-            os.path.join(save_path, '_{}'.format(k)), 
+            save_path + '_{}'.format(k), 
             ys=ys, idxs=idxs, times=times
         )
 
@@ -258,7 +258,7 @@ if __name__ == "__main__":
         del ys
 
     # Save params
-    np.savez(os.path.join(save_path, "run_pars"), 
+    np.savez(save_path + "_run_pars", 
             tmax=tmax, 
             dt=dt,
             step=step,
@@ -271,4 +271,4 @@ if __name__ == "__main__":
             ys0=ys0,
             stim=np.asarray([Istim(t) for t in times]))
 
-    np.savez(os.path.join(save_path, "pars"), **pars.__dict__)
+    np.savez(save_path + "_pars", **pars.__dict__)
