@@ -1,16 +1,18 @@
-"""Usage: bluemass.py [-t T -f F] 
-    [--r_back=RATE_E,RATE_I] [--w_back=W_E,W_I] PATH PARS_FILE
+"""Usage: bluemass.py [-t T] [-f F] [-s STIM_SEED]
+    [--r_back=RATE_E,RATE_I] [--w_back=W_E,W_I] 
+    NAME PARS_FILE
 
 Simulate the Blue Brain using gNMMs.
 
     Arguments:
-        PATH        where to save the results
-        PARS_FILE   parameters file (python code)
+        NAME        name (and path) of the results files
+        PARS_FILE   parameters file (a BMparams() instance)
 
     Options:
-        -h --help   show this screen
-        -t T        simultation run time [default: 0.2] 
-        -f F        background oscillation frequency [default: 10]
+        -h --help               show this screen
+        -t T                    simultation run time [default: 1.0] 
+        -f F                    background modulation frequency [default: 10]
+        -s STIM_SEED            Seed for creating the stimulus [default: 1]
         --r_back=RATE_E,RATE_I  background firing rate (Hz)
         --w_back=W_E,W_I        background wieghts (nsiemens)        
 
@@ -199,7 +201,7 @@ if __name__ == "__main__":
 
     # Simulation parameters ----------------------------------------- 
     print(">>> Building the model.")
-    save_path = args['PATH']
+    save_path = args['NAME']
     execfile(args['PARS_FILE'])  # returns 'pars'
 
     tmax = float(args['-t'])
@@ -217,8 +219,9 @@ if __name__ == "__main__":
     dt = 1e-4
 
     # Create stimulus
+    stim_seed = int(args['-s'])
     scale = 0.001
-    Istim = create_I(tmax, pars.I_e, scale * pars.I_e, dt=dt, seed=1)
+    Istim = create_I(tmax, pars.I_e, scale * pars.I_e, dt=dt, seed=stim_seed)
 
     # Define systems to integrate
     layers_f0, idxs = create_layers(0, Istim, pars)
@@ -235,26 +238,7 @@ if __name__ == "__main__":
     ys0[idxs['Sb']] = (pars.Wb ** 2) / 2
 
     # Run -----------------------------------------------------------
-    print(">>> Running baseline.")
-    ys_ts = ys0
-    t0 = 0.0
-    ts = t0 + step
-    for k in progressbar(range(n_step)):
-        times = np.linspace(t0, ts, int(step / dt))
-
-        ys = itoint(layers_f0, g, ys_ts, times)
-
-        np.savez(
-            os.path.join(save_path, 'ys_base_{}'.format(k)), 
-            ys=ys, idxs=idxs, times=times
-        )
-
-        t0 = deepcopy(ts)
-        ts += step
-        ys_ts = deepcopy(ys[-1, :])
-        del ys
-
-    print(">>> Running modulation.")
+    print(">>> Running the model.")
     ys_ts = ys0
     t0 = 0.0
     ts = t0 + step
@@ -264,7 +248,7 @@ if __name__ == "__main__":
         ys = itoint(layers, g, ys_ts, times)
 
         np.savez(
-            os.path.join(save_path, 'ys_{}'.format(k)), 
+            os.path.join(save_path, '_{}'.format(k)), 
             ys=ys, idxs=idxs, times=times
         )
 
@@ -280,6 +264,7 @@ if __name__ == "__main__":
             step=step,
             n_step=n_step,
             f=f, 
+            stim_seed=stim_seed,
             scale=scale, 
             times=times, 
             max_n=max_n, 
