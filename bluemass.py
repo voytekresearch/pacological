@@ -28,7 +28,7 @@ from numpy import random
 from copy import deepcopy
 
 from fakespikes.rates import stim
-from pacological.util import create_I, ornstein_uhlenbeck
+from pacological.util import create_I, ornstein_uhlenbeck, progressbar
 
 # Control background 
 SEED = 42
@@ -121,11 +121,13 @@ def create_layers(f, stim, pars):
     i0 = ik
     ik += 2
     idx_sb = range(i0, ik)
-    
+   
+    # Setup bias
     I_bias = np.zeros(len(idx_r))
     I_bias[np.diagonal(T) == 1] = I_e
     I_bias[np.diagonal(T) == -1] = I_i
 
+    # Setup synapses
     I_syn = np.zeros(len(idx_r))
     I_tmp = np.zeros(len(idx_r))
     g0 = np.zeros_like(I_syn)
@@ -134,6 +136,8 @@ def create_layers(f, stim, pars):
 
     # Define the function to integrate
     def layers(ys, t):
+        """A layered gNMM model."""
+
         R = ys[idx_r]
         G = ys[idx_g].reshape(n, n)
         S = ys[idx_s].reshape(n, n)
@@ -194,10 +198,14 @@ if __name__ == "__main__":
     args = docopt(__doc__, version='Alpha')
 
     # Simulation parameters ----------------------------------------- 
+    print(">>> Building the model.")
     save_path = args['PATH']
     execfile(args['PARS_FILE'])  # returns 'pars'
 
     tmax = float(args['-t'])
+    step = 0.1  # Don't go larger than 0.2
+    n_step = int(np.ceil(tmax / step))
+
     f = float(args['-f'])
 
     if args['--r_back'] is not None:
@@ -207,7 +215,6 @@ if __name__ == "__main__":
 
     # Simulation input ---------------------------------------------- 
     dt = 1e-4
-    times = np.linspace(0, tmax, int(tmax / dt))
 
     # Create stimulus
     scale = 0.001
@@ -219,8 +226,8 @@ if __name__ == "__main__":
     g = partial(ornstein_uhlenbeck, sigma=0.01, loc=pars.stim_i) 
 
     # Init ys0
-    maxn = max(max([v[:] for v in idxs.values()]))  # A dirty way to get max 
-    ys0 = np.zeros(maxn + 1)
+    max_n = max(max([v[:] for v in idxs.values()]))  # A dirty way to get max 
+    ys0 = np.zeros(max_n + 1)
     ys0[idxs['R']] = pars.R0
     ys0[idxs['G']] = (pars.W / 2).flatten()
     ys0[idxs['S']] = ((pars.W / 2) ** 2).flatten()
@@ -228,21 +235,54 @@ if __name__ == "__main__":
     ys0[idxs['Sb']] = (pars.Wb ** 2) / 2
 
     # Run -----------------------------------------------------------
-    ys_base = itoint(layers_f0, g, ys0, times)
-    np.savez(os.path.join(save_path, 'ys_base'), ys_base=ys_base, idxs=idxs)
-    del ys_base
+    print(">>> Running baseline.")
+    ys_ts = ys0
+    t0 = 0.0
+    ts = t0 + step
+    for k in progressbar(range(n_step)):
+        times = np.linspace(t0, ts, int(step / dt))
 
-    ys = itoint(layers, g, ys0, times)
-    np.savez(os.path.join(save_path, 'ys'), ys=ys, idxs=idxs)
-    del ys
+        ys = itoint(layers_f0, g, ys_ts, times)
 
+        np.savez(
+            os.path.join(save_path, 'ys_base_{}'.format(k)), 
+            ys=ys, idxs=idxs, times=times
+        )
+
+        t0 = deepcopy(ts)
+        ts += step
+        ys_ts = deepcopy(ys[-1, :])
+        del ys
+
+    print(">>> Running modulation.")
+    ys_ts = ys0
+    t0 = 0.0
+    ts = t0 + step
+    for k in progressbar(range(n_step)):
+        times = np.linspace(t0, ts, int(step / dt))
+
+        ys = itoint(layers, g, ys_ts, times)
+
+        np.savez(
+            os.path.join(save_path, 'ys_{}'.format(k)), 
+            ys=ys, idxs=idxs, times=times
+        )
+
+        t0 = deepcopy(ts)
+        ts += step
+        ys_ts = deepcopy(ys[-1, :])
+        del ys
+
+    # Save params
     np.savez(os.path.join(save_path, "run_pars"), 
             tmax=tmax, 
-            f=f, 
             dt=dt,
+            step=step,
+            n_step=n_step,
+            f=f, 
             scale=scale, 
             times=times, 
-            maxn=maxn, 
+            max_n=max_n, 
             ys0=ys0,
             stim=np.asarray([Istim(t) for t in times]))
 
