@@ -1,6 +1,32 @@
 import numpy as np
 
 
+def perturb_params(BMparams, attr, sd=None, prng=None, seed=None):
+    if prng is None:
+        prng = np.random.RandomState(seed)
+
+    X = getattr(BMparams, attr)
+
+    try:
+        SD = getattr(BMparams, sd)
+    except TypeError:
+        if sd is None:
+            SD = X * 0.10
+        elif sd.isdigit():
+            STD = std
+        else:
+            print("std must be none, a number, or an attr of BMparams")
+    # import ipdb; ipdb.set_trace()
+    
+    SD[SD == 0] = 1e-30
+    SD = prng.normal(0, scale=SD, size=X.shape)
+    assert X.shape == SD.shape, "X and SD are not the same shape."
+
+    setattr(BMparams, attr, X + SD)
+
+    return BMparams
+
+        
 class BMparams(object):
     # Background synapses
     Nb = 10000
