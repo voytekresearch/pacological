@@ -31,6 +31,8 @@ from copy import deepcopy
 
 from fakespikes.rates import stim
 from pacological.util import create_I, ornstein_uhlenbeck, progressbar
+from pacological.pars import perturb_params
+
 
 # Control background 
 SEED = 42
@@ -160,8 +162,9 @@ def create_layers(f, stim, pars):
         # Step rates
         for j in idx_r:
             I_syn[j] = np.dot(G[:, j], V[:, j])
-
+            
             if j in stim_index:
+                # print I_syn[j]
                 I_syn[j] += stim(t)
 
             if j in back_index:
@@ -197,13 +200,24 @@ def create_layers(f, stim, pars):
 
     
 if __name__ == "__main__":
-    args = docopt(__doc__, version='Alpha')
+    args = docopt(__doc__, version='tlpha')
 
     # Simulation parameters ----------------------------------------- 
     print(">>> Building the model.")
     save_path = args['NAME']
     execfile(args['PARS_FILE'])  # returns 'pars'
 
+    # Override defaults
+    # pars.I_e = 2e-11  # here - upped by one order
+    # pars.I_i = 1e-11
+
+    # Pertub defaults
+    pars = perturb_params(pars, 'W', sd='Wstd', prng=prng)
+    
+    # W can't be less then 0 (or a really small number, in this case)
+    pars.W[pars.W < 1e-20] = 0
+
+    # Set up time
     tmax = float(args['-t'])
     step = 0.1  # Don't go larger than 0.2
     n_step = int(np.ceil(tmax / step))
@@ -224,8 +238,7 @@ if __name__ == "__main__":
     Istim = create_I(tmax, pars.I_e, scale * pars.I_e, dt=dt, seed=stim_seed)
 
     # Define systems to integrate
-    layers_f0, idxs = create_layers(0, Istim, pars)
-    layers, _ = create_layers(f, Istim, pars)
+    layers, idxs = create_layers(f, Istim, pars)
     g = partial(ornstein_uhlenbeck, sigma=0.01, loc=pars.stim_i) 
 
     # Init ys0
@@ -248,7 +261,7 @@ if __name__ == "__main__":
         ys = itoint(layers, g, ys_ts, times)
 
         np.savez(
-            save_path + '_{}'.format(k), 
+            save_path + '_k{}'.format(k), 
             ys=ys, idxs=idxs, times=times
         )
 
@@ -269,6 +282,6 @@ if __name__ == "__main__":
             times=times, 
             max_n=max_n, 
             ys0=ys0,
-            stim=np.asarray([Istim(t) for t in times]))
+            stim=np.asarray([Istim(t) for t in np.linspace(0, tmax, int(tmax/dt))]))
 
     np.savez(save_path + "_pars", **pars.__dict__)
