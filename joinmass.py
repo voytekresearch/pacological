@@ -17,6 +17,7 @@ import numpy as np
 
 args = docopt(__doc__, version='Alpha')
 files = args['FILES']
+print(">>> Joining {}.".format(", ".join(files)))
 
 # Loop, open, join
 ys = []
