@@ -1650,7 +1650,9 @@ conns = [
 pars = BMparams(
         pops, conns, 
         # ['L4_SS', 'L4_PC'], 
-        ['L4_SS'], 
+        # ['L4_SS'], 
+        [], 
+        #
         # ['L6_UTPC', 'L6_IPC', 'L6_TCP_L1', 'L6_TCP_L4'],
-        ['L6_TCP_L1', 'L6_TCP_L4'],
-        [135e1, 135e1], [400e-9, 1600e-9])
+        # ['L6_TCP_L1', 'L6_TCP_L4'],
+        [])
