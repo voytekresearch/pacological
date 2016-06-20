@@ -271,6 +271,7 @@ if __name__ == "__main__":
     # Simulation parameters ----------------------------------------- 
     print(">>> Building the model.")
     save_path = args['NAME']
+    pars = None
     execfile(args['PARS_FILE'])  # returns 'pars'
 
     # Override defaults

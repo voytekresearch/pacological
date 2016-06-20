@@ -656,4 +656,3 @@ exp301:
 	-mkdir data/exp301
 	-rm data/exp301/*
 	nice -19 python exp/exp301.py data/exp301/ | tee data/exp301/log
-	
