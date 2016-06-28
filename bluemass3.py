@@ -2,7 +2,7 @@
     [-t T] 
     [--seed STIM_SEED]
     [--dt DT]
-    [--r_stim=RATE] 
+    [--r_stim=RATE] [--verbose] [--debug]
     
 Simulate the Blue Brain using gNMMs.
 
@@ -15,26 +15,32 @@ Simulate the Blue Brain using gNMMs.
         -t T                    simultation run time [default: 1.0] 
         --seed STIM_SEED        seed for creating the stimulus [default: 1]
         --dt DT                 time resolution [default: 1e-3]
-        --r_stim=RATE           stimulus firing rate firing rate (Hz) [default: 10]
+        --r_stim=RATE           stimulus firing rate (Hz) [default: 10]
+        --debug                 write data to disk for all t
+        --verbose               print progress
 
 """
 from __future__ import division
 from docopt import docopt
-import os, sys
 from copy import deepcopy
 from sdeint import itoint
+from scipy.interpolate import interp1d
 
 import numpy as np
 from numpy import random
-from scipy.integrate import odeint, ode
 from fakespikes.rates import stim
-from pacological.util import create_I, ornstein_uhlenbeck, progressbar
-from pacological.pars import perturb_params
+from pacological.util import create_I, ornstein_uhlenbeck
 from pacological.fi import lif
 from pacological.fi import N as normal
+from pacological.pars import BMparams
+from functools import partial
+
+import csv
 
 
 def background(t, f, rbe, rbi, min_rate=12, prng=None):
+    """Poissonic background activity"""
+
     if prng is None:
         prng = random.RandomState()
 
@@ -58,7 +64,9 @@ def background(t, f, rbe, rbi, min_rate=12, prng=None):
     return rbe_t[0], rbi_t[0], rbe0, rbi0, prng
 
 
-def create_layers(stim, pars, seed=42, verbose=True):
+def create_layers(stim, pars, seed=42, verbose=True, debug=False):
+    """Create the cortical model"""
+
     global prng
     prng = random.RandomState(seed)
 
@@ -70,23 +78,22 @@ def create_layers(stim, pars, seed=42, verbose=True):
     I_max = pars.I_max
     background_res = pars.background_res
     t_back = pars.t_back
+    tau_m = pars.tau_m
 
     # Network
     Z = pars.Z  # Input
-    C = pars.C  # Total synapse number
+    C = pars.C  # Connectivty
+    C_var = pars.C_var
     W = pars.W  # Weights
-    T = pars.T  # Connection type E:1, I:-1
     V = pars.V  # Eff. voltage drive at synapses
     K = pars.K  # Taus
-    tau_m = pars.tau_m
 
     # Input
     Zi = pars.Zi  # Input
-    Ci = pars.Ci  # Total synapse number
     Wi = pars.Wi  # Weights
-    Ti = pars.Ti  # Connection type E:1, I:-1
     Ki = pars.Ki  # Taus
-    Id = np.identity(Zi.shape[0])  # And identity matrix
+
+    Id = np.identity(Zi.shape[0])  # identity for broadcasting fun
 
     # Define a connection index
     idx_conn = Z == 1
@@ -98,15 +105,15 @@ def create_layers(stim, pars, seed=42, verbose=True):
 
     i0 = n
     ik = i0 + n_s
-    idx_g = range(i0, ik)
+    idx_h = range(i0, ik)
 
     i0 = ik
     ik += n_s
-    idx_s = range(i0, ik)
+    idx_hs = range(i0, ik)
 
     # Setup synapses
-    G = np.zeros_like(W)
-    S = np.zeros_like(W)
+    H = np.zeros_like(W)
+    H_var = np.zeros_like(W)
 
     # Setup valid FI window
     I_fis = np.linspace(0, I_max, 500)
@@ -117,8 +124,8 @@ def create_layers(stim, pars, seed=42, verbose=True):
 
         # unpack ys
         R = ys[idx_r]
-        G[idx_conn] = ys[idx_g]  # g
-        S[idx_conn] = ys[idx_s]  # sigma_{g}
+        H[idx_conn] = ys[idx_h]  # TODO
+        H_var[idx_conn] = ys[idx_hs]  # TODO
 
         # the step
         dh = np.zeros_like(ys)
@@ -130,15 +137,22 @@ def create_layers(stim, pars, seed=42, verbose=True):
             if verbose:
                 print ">>> Pop: {}".format(pars.names[j])
 
-                # I(t)
-            I = np.dot(G[:, j], V[:, j])
+            # ---------------------------------------------
+            # I(t) - network currents
+            g = H[:, j] * R[j]
+            G = C[:, j] * g
+            I = np.dot(G, V[:, j])
+            I = max(I, 0)  # Rectify
 
-            if I > (2 * I_max):
-                raise ValueError("I became to large.")
+            Np = C_var[:, j]  # approx valid for small p; revist?
+            S = (C_var[:, j] * g**2) + (Np * H_var[:, j] * R[j])
+            I_var = np.dot(S, V[:, j]**2)
 
-            # sigma_{I}(t)
-            S_I = np.dot(S[:, j], V[:, j]**2)
+            if I > I_max:
+                print("!!! I became to large. Reset to I_max !!!")
+                I = I_max
 
+            # ---------------------------------------------
             # f_back(t) - background firing rate
             b = pars.backs[j][1]
             f = b['f']
@@ -147,15 +161,15 @@ def create_layers(stim, pars, seed=42, verbose=True):
             w_e = b['w_e']
             w_i = b['w_i']
             tau_e = b['tau_e']
-            tau_i = b['tau_e']
+            tau_i = b['tau_i']
 
-            # Stocastic
+            # stocastic
             # rbe, rbi, _, _, prng = background(t, f, r_e, r_i, prng=prng)
+
             # Deterministic
             _, _, rbe, rbi, prng = background(t, f, r_e, r_i, prng=prng)
 
-            # Round the poisson rate output so `lif` is not 
-            # called with EVERY iteration.
+            # Round the poisson rate output so `lif` can be cached
             rbe = np.round(rbe, background_res)
             rbi = np.round(rbi, background_res)
 
@@ -164,7 +178,6 @@ def create_layers(stim, pars, seed=42, verbose=True):
                 print("rbe/i : {}/{}".format(rbe, rbi))
             fi = lif(t_back,
                      I_fis,
-                     f,
                      rbe,
                      rbi,
                      w_e,
@@ -173,21 +186,53 @@ def create_layers(stim, pars, seed=42, verbose=True):
                      tau_i=tau_i,
                      verbose=verbose)
 
-            # Calculate network variance, g(t)
-            g = normal(I_fis, I, S_I)
+            # Est current distribution
+            Idist = normal(I_fis, I, I_var)
 
             # Estimate network firing rate, r_t(t)
-            # (this is PHI, the network non-linearity)
-            rt = np.trapz(fi, g)
+            if I_var < 1e-10:
+                rt = interp1d(I_fis, fi)(I)
+                st = 0.0
+
+                if verbose:
+                    print("!!! Interpolating rate. !!!")
+            else:
+                rt = np.trapz(Idist * fi, I_fis)
+                st = np.trapz((fi - rt)**2 * Idist, I_fis)
 
             # Network noise(t)
             rn = prng.poisson(pars.sigma, 1)[0]
 
             # Update R(t)
-            dh[j] = (-R[j] / tau_m) + rt + rn
+            dh[idx_r[j]] = (-R[j] + rt + rn) / tau_m
 
             if verbose:
-                print("I : {}, rt : {}, rn : {}".format(I, rt, rn))
+                print("I : {}, rt : {}, rn : {}".format(I * 1000, rt, rn))
+            if debug:
+                with open('I.csv', 'a') as f:
+                    writer = csv.writer(f)
+                    writer.writerow([I, ])
+                with open('I_var.csv', 'a') as f:
+                    writer = csv.writer(f)
+                    writer.writerow([I_var, ])
+                with open('S.csv', 'a') as f:
+                    writer = csv.writer(f)
+                    writer.writerow(S)
+                with open('G.csv', 'a') as f:
+                    writer = csv.writer(f)
+                    writer.writerow(G)
+                with open('fi.csv', 'a') as f:
+                    writer = csv.writer(f)
+                    writer.writerow(fi)
+                with open('Idist.csv', 'a') as f:
+                    writer = csv.writer(f)
+                    writer.writerow(Idist)
+                with open('rt.csv', 'a') as f:
+                    writer = csv.writer(f)
+                    writer.writerow([rt, ])
+                with open('st.csv', 'a') as f:
+                    writer = csv.writer(f)
+                    writer.writerow([st, ])
 
         # stim(t)
         rs = prng.poisson(stim(t), 1)[0]
@@ -195,16 +240,21 @@ def create_layers(stim, pars, seed=42, verbose=True):
             print("rs : {}".format(rs))
 
         # dg/dt
-        Gnet = (W * C * R)
-        Gi = Id * (Wi * Ci * (Zi * rs))
-        dg = (-(G / K) + Gnet + Gi)[idx_conn].flatten()
-        dh[idx_g] = dg
+        # TODO - input is going through the diag, which
+        # means the Ki term is never used. Need to change
+        # synapses to use Ki, or remove Ki from pars.
+        # The former seems preferable.
+        Hnet = W * R[:, None]
+        Hi = Id * (Wi * (Zi * rs))
+        dh[idx_h] = (-(H / K) + Hnet + Hi)[idx_conn].flatten()
 
         # ds/dt
-        Gnet = ((W * C)**2 * R)
-        Gi = Id * ((Wi * Ci)**2 * (Zi * rs))
-        ds = (-2 * (S / K) + Gnet + Gi)[idx_conn].flatten()
-        dh[idx_s] = ds
+        Hnet = W**2 * R[:, None]
+        Hi = Id * (Wi**2 * (Zi * rs))
+        dh[idx_hs] = ((-2 * (H_var / K)) + Hnet + Hi)[idx_conn].flatten()
+
+        # import ipdb
+        # ipdb.set_trace()
 
         # If anything goes NaN we need to know NOW.
         if np.any(np.logical_not(np.isfinite(dh))):
@@ -215,12 +265,12 @@ def create_layers(stim, pars, seed=42, verbose=True):
     if verbose:
         print(">>> Done.\n>>> Running the model....")
 
-    idxs = {'R': idx_r, 'G': idx_g, 'S': idx_s, 'Z': idx_conn}
+    idxs = {'R': idx_r, 'H': idx_h, 'H_var': idx_hs, 'Z': idx_conn}
 
     return layers, idxs
 
 
-def create_ys0(pars, idxs, frac=0.1):
+def create_ys0(pars, idxs, frac=0.1, frac_var=0.1):
     """Init the intial value, ys0"""
 
     max_n = max(max([v[:] for k, v in idxs.items() if k != 'Z']))
@@ -228,8 +278,8 @@ def create_ys0(pars, idxs, frac=0.1):
     idx_conn = idxs['Z']
 
     ys0[idxs['R']] = [p[1]['r_0'] for p in pars.pops]
-    ys0[idxs['G']] = (pars.W * frac)[idx_conn]
-    ys0[idxs['S']] = ((pars.W * frac)**2)[idx_conn]
+    ys0[idxs['H']] = (pars.W * frac)[idx_conn]
+    ys0[idxs['H_var']] = (pars.W * frac)[idx_conn]
 
     return ys0
 
@@ -237,14 +287,26 @@ def create_ys0(pars, idxs, frac=0.1):
 if __name__ == "__main__":
     args = docopt(__doc__, version='alpha')
 
+    verbose = False
+    if args['--verbose']:
+        verbose = True
+
+    debug = False
+    if args['--debug']:
+        debug = True
+
     # Simulation parameters ------------------------------------
-    print(">>> Building the model.")
+    if verbose:
+        print(">>> Building the model.")
+
     seed = int(args['--seed'])
     save_path = args['NAME']
 
     # Load parameters
-    pars = None
-    execfile(args['PARS_FILE'])  # returns 'pars'
+    pops, inputs, backs, conns = None, None, None, None
+    execfile(args['PARS_FILE'])  # returns into the above
+
+    pars = BMparams(pops, conns, backs, inputs, sigma=1, background_res=0)
 
     # Setup time
     t = float(args['-t'])
@@ -259,7 +321,11 @@ if __name__ == "__main__":
 
     # Setup the network
     gn = partial(ornstein_uhlenbeck, sigma=0.01, loc=[])
-    fn, idxs = create_layers(stim, pars, seed=seed)
+    fn, idxs = create_layers(stim,
+                             pars,
+                             seed=seed,
+                             debug=debug,
+                             verbose=verbose)
 
     # Init the intial values
     ys0 = create_ys0(pars, idxs, frac=0.1)
@@ -276,4 +342,5 @@ if __name__ == "__main__":
              stim=np.asarray([stim(t) for t in times]),
              t=t,
              dt=dt,
+             d=d,
              seed=seed)
