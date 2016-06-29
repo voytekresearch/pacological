@@ -79,6 +79,7 @@ def create_layers(stim, pars, seed=42, verbose=True, debug=False):
     background_res = pars.background_res
     t_back = pars.t_back
     tau_m = pars.tau_m
+    n_pop = pars.n_pop
 
     # Network
     Z = pars.Z  # Input
@@ -101,9 +102,11 @@ def create_layers(stim, pars, seed=42, verbose=True, debug=False):
 
     # Create indices to pack/repack the matrices
     n = Z.shape[0]
-    idx_r = range(n)
-
     i0 = n
+    ik = i0 + n_s
+    idx_r = range(i0, ik)
+
+    i0 = ik
     ik = i0 + n_s
     idx_h = range(i0, ik)
 
@@ -112,6 +115,7 @@ def create_layers(stim, pars, seed=42, verbose=True, debug=False):
     idx_hs = range(i0, ik)
 
     # Setup synapses
+    R = np.zeros_like(W)
     H = np.zeros_like(W)
     H_var = np.zeros_like(W)
 
@@ -123,9 +127,9 @@ def create_layers(stim, pars, seed=42, verbose=True, debug=False):
         global prng
 
         # unpack ys
-        R = ys[idx_r]
-        H[idx_conn] = ys[idx_h]  # TODO
-        H_var[idx_conn] = ys[idx_hs]  # TODO
+        R[idx_conn] = ys[idx_r]
+        H[idx_conn] = ys[idx_h]
+        H_var[idx_conn] = ys[idx_hs]
 
         # the step
         dh = np.zeros_like(ys)
@@ -133,19 +137,19 @@ def create_layers(stim, pars, seed=42, verbose=True, debug=False):
         if verbose:
             print "---\n>>> t: {}".format(t)
 
-        for j in idx_r:
+        for j in range(n_pop):
             if verbose:
                 print ">>> Pop: {}".format(pars.names[j])
 
             # ---------------------------------------------
             # I(t) - network currents
-            g = H[:, j] * R[j]
+            g = R[:, j]  # * R[:, j]
             G = C[:, j] * g
             I = np.dot(G, V[:, j])
             I = max(I, 0)  # Rectify
 
             Np = C_var[:, j]  # approx valid for small p; revist?
-            S = (C_var[:, j] * g**2) + (Np * H_var[:, j] * R[j])
+            S = (C_var[:, j] * g**2) + (Np * H_var[:, j])
             I_var = np.dot(S, V[:, j]**2)
 
             if I > I_max:
@@ -203,9 +207,6 @@ def create_layers(stim, pars, seed=42, verbose=True, debug=False):
             # Network noise(t)
             rn = prng.poisson(pars.sigma, 1)[0]
 
-            # Update R(t)
-            dh[idx_r[j]] = (-R[j] + rt + rn) / tau_m
-
             if verbose:
                 print("I : {}, rt : {}, rn : {}".format(I * 1000, rt, rn))
             if debug:
@@ -234,6 +235,9 @@ def create_layers(stim, pars, seed=42, verbose=True, debug=False):
                     writer = csv.writer(f)
                     writer.writerow([st, ])
 
+        # Update G(t)
+        dh[idx_r] = H  # copy from last dg/dt into g
+
         # stim(t)
         rs = prng.poisson(stim(t), 1)[0]
         if verbose:
@@ -244,17 +248,14 @@ def create_layers(stim, pars, seed=42, verbose=True, debug=False):
         # means the Ki term is never used. Need to change
         # synapses to use Ki, or remove Ki from pars.
         # The former seems preferable.
-        Hnet = W * R[:, None]
+        Hnet = W * R
         Hi = Id * (Wi * (Zi * rs))
         dh[idx_h] = (-(H / K) + Hnet + Hi)[idx_conn].flatten()
 
         # ds/dt
-        Hnet = W**2 * R[:, None]
+        Hnet = W**2 * R
         Hi = Id * (Wi**2 * (Zi * rs))
         dh[idx_hs] = ((-2 * (H_var / K)) + Hnet + Hi)[idx_conn].flatten()
-
-        # import ipdb
-        # ipdb.set_trace()
 
         # If anything goes NaN we need to know NOW.
         if np.any(np.logical_not(np.isfinite(dh))):
@@ -277,7 +278,7 @@ def create_ys0(pars, idxs, frac=0.1, frac_var=0.1):
     ys0 = np.zeros(max_n + 1)
     idx_conn = idxs['Z']
 
-    ys0[idxs['R']] = [p[1]['r_0'] for p in pars.pops]
+    ys0[idxs['R']] = (pars.W * frac)[idx_conn]
     ys0[idxs['H']] = (pars.W * frac)[idx_conn]
     ys0[idxs['H_var']] = (pars.W * frac)[idx_conn]
 
