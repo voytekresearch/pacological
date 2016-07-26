@@ -11,7 +11,7 @@ from numpy import abs as npabs
 from numpy import mean as npmean
 from numpy.random import normal
 from fakespikes.rates import stim
-from pacological.util import create_I, ornstein_uhlenbeck
+from pacological.util import create_stim_I, ornstein_uhlenbeck
 
 """Jansen Rit model"""
 
@@ -102,7 +102,7 @@ if __name__ == "__main__":
     # Stim params
     d = 1  # drive rate (want 0-1)
     scale = .01 * d
-    Istim = create_I(t, d, scale, dt=dt, seed=seed)
+    Istim = create_stim_I(t, d, scale, dt=dt, seed=seed)
 
     # Integrate
     times = linspace(0, t, t / dt)

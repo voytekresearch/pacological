@@ -1,4 +1,4 @@
-"""Usage: bluemass3.py NAME PARS_FILE
+"""Usage: bluemass5.py NAME PARS_FILE
     [-t T] 
     [--seed STIM_SEED]
     [--dt DT]
@@ -26,13 +26,16 @@ from sdeint import itoint
 
 import numpy as np
 from numpy import random
-from scipy.integrate import odeint, ode
 from fakespikes.rates import stim
-from pacological.util import create_stim_I, ornstein_uhlenbeck, progressbar
+from pacological.util import create_stim_I, create_constant_I
+from pacological.util import ornstein_uhlenbeck
 from pacological.pars import perturb_params
+from pacological.pars import BMparams
 from pacological.fi import lif
 from pacological.fi import N as normal
 import warnings
+from functools import partial
+from pykdf.kdf import save_kdf, load_kdf
 
 
 def background(t, f, rbe, rbi, min_rate=12, prng=None):
@@ -63,11 +66,11 @@ def create_layers(stim, pars, seed=42, verbose=True):
     global prng
     prng = random.RandomState(seed)
 
-    if verbose:
-        print(">>> Creating layers.")
+    # if verbose:
+        # print(">>> Creating layers.")
 
-    # Unpack pars for readability
-    # Limits for single unit fi
+    # Unpack pars
+    n_pop = pars.n_pop
     I_max = pars.I_max
     background_res = pars.background_res
     t_back = pars.t_back
@@ -80,6 +83,7 @@ def create_layers(stim, pars, seed=42, verbose=True):
     V = pars.V  # Eff. voltage drive at synapses
     K = pars.K  # Taus
     tau_m = pars.tau_m
+    I_bias = pars.I_bias
 
     # Input
     Zi = pars.Zi  # Input
@@ -87,62 +91,75 @@ def create_layers(stim, pars, seed=42, verbose=True):
     Wi = pars.Wi  # Weights
     Ti = pars.Ti  # Connection type E:1, I:-1
     Ki = pars.Ki  # Taus
+    Vi = pars.Vi  # Input
     Id = np.identity(Zi.shape[0])  # And identity matrix
 
     # Define a connection index
     idx_conn = Z == 1
+    idx_conn_in = Zi == 1
+
     n_s = np.sum(idx_conn)
+    n_in = np.sum(idx_conn_in)
 
-    # Create indices to pack/repack the matrices
-    n = Z.shape[0]
-    idx_r = range(n)
+    # Define idx into ys
+    idx_in = range(n_in)
 
-    i0 = n
-    ik = i0 + n_s
-    idx_g = range(i0, ik)
+    i0 = n_in
+    ik = i0 + n_in
+    idx_in_sigma = range(i0, ik)
 
     i0 = ik
     ik += n_s
-    idx_s = range(i0, ik)
+    idx_h = range(i0, ik)
+
+    i0 = ik
+    ik += n_s
+    idx_h_sigma = range(i0, ik)
+
+    i0 = ik
+    ik += n_pop
+    idx_r = range(i0, ik)
 
     # Setup synapses
-    G = np.zeros_like(W)
-    S = np.zeros_like(W)
+    H = np.zeros_like(W)
+    Hsigma = np.zeros_like(W)
+
+    IN = np.zeros_like(Wi)
+    INsigma = np.zeros_like(Wi)
 
     # Setup valid FI window
     I_fis = np.linspace(0, I_max, 500)
+
 
     def layers(ys, t):
         """A layered gNMM model."""
         global prng
 
-        # unpack ys
-        R = ys[idx_r]
-        G[idx_conn] = ys[idx_g]  # g
-        S[idx_conn] = ys[idx_s]  # sigma_{g}
+        # Unpack ys
+        IN[idx_conn_in] = ys[idx_in]
+        INsigma[idx_conn_in] = ys[idx_in_sigma]
 
-        # the step
-        dh = np.zeros_like(ys)
+        H[idx_conn] = ys[idx_h]
+        Hsigma[idx_conn] = ys[idx_h_sigma]
 
-        if verbose:
-            print "---\n>>> t: {}".format(t)
+        G = H * C
+        Gi = IN * Ci
 
-        for j in idx_r:
-            if verbose:
-                print ">>> Pop: {}".format(pars.names[j])
+        R = np.zeros(n_pop)
 
-                # I(t
-            I = np.dot(G[:, j], V[:, j])
+        for j in range(n_pop):
+            dy = np.zeros_like(ys)
 
+            # I(t)
+            I = np.dot(G[:, j], V[:, j]) + np.dot(Gi[j], Vi[j]) + I_bias[j]
             if I > I_max:
-                warnings.warn("I became to large. Reset to I_max", 
-                    RuntimeWarning)
                 I = I_max
 
-            # sigma_{I}(t)
-            S_I = np.dot(S[:, j], V[:, j]**2)
+            # I_sigma(t)
+            Isigma = np.abs(I)  # TODO; correct math fron Zandt
 
-            # f_back(t) - background firing rate
+            # FI
+            # - Params
             b = pars.backs[j][1]
             f = b['f']
             r_e = b['r_e']
@@ -152,19 +169,20 @@ def create_layers(stim, pars, seed=42, verbose=True):
             tau_e = b['tau_e']
             tau_i = b['tau_e']
 
-            # Stocastic
+            # - Background params
+            # stocastic
             # rbe, rbi, _, _, prng = background(t, f, r_e, r_i, prng=prng)
+
             # Deterministic
             _, _, rbe, rbi, prng = background(t, f, r_e, r_i, prng=prng)
 
+            # Calculate single neuron fi curve
+            #
             # Round the poisson rate output so `lif` is not 
             # called with EVERY iteration.
             rbe = np.round(rbe, background_res)
             rbi = np.round(rbi, background_res)
 
-            # Use background at t to define a fi(t).
-            if verbose:
-                print("rbe/i : {}/{}".format(rbe, rbi))
             fi = lif(t_back,
                      I_fis,
                      f,
@@ -176,49 +194,49 @@ def create_layers(stim, pars, seed=42, verbose=True):
                      tau_i=tau_i,
                      verbose=verbose)
 
+
             # Calculate network variance, g(t)
-            g = normal(I_fis, I, S_I)
+            g = normal(I_fis, I, Isigma)
 
             # Estimate network firing rate, r_t(t)
             # (this is PHI, the network non-linearity)
-            rt = np.trapz(fi, g)
+            R[j] = np.trapz(fi * g, I_fis)
 
-            # Network noise(t)
-            rn = prng.poisson(pars.sigma, 1)[0]
+            # TODO FI_sigma
 
-            # Update R(t)
-            dh[j] = (-R[j] / tau_m) + rt + rn
+        # H
+        dy[idx_h] = ((-H / K) + (W * C * R))[idx_conn].flatten()
 
-            if verbose:
-                print("I : {}, rt : {}, rn : {}".format(I, rt, rn))
+        # Hsigma
+        dy[idx_h_sigma] = ((-2 * (Hsigma / K)) + (
+            (W * C)**2 * R))[idx_conn].flatten()
 
-        # stim(t)
-        rs = prng.poisson(stim(t), 1)[0]
-        if verbose:
-            print("rs : {}".format(rs))
+        # Stim
+        R_stim = prng.poisson(stim(t), 1)[0] * Zi
 
-        # dg/dt
-        Gnet = (W * C * R)
-        Gi = Id * (Wi * Ci * (Zi * rs))
-        dg = (-(G / K) + Gnet + Gi)[idx_conn].flatten()
-        dh[idx_g] = dg
+        # IN
+        dy[idx_in] = ((-IN / Ki) + (Wi * Ci * R_stim))[idx_conn_in].flatten()
 
-        # ds/dt
-        Gnet = ((W * C)**2 * R)
-        Gi = Id * ((Wi * Ci)**2 * (Zi * rs))
-        ds = (-2 * (S / K) + Gnet + Gi)[idx_conn].flatten()
-        dh[idx_s] = ds
+        # INsigma
+        dy[idx_in_sigma] = (-2 * (INsigma / Ki) + (
+            (Wi * Ci)**2 * R_stim))[idx_conn_in].flatten()
 
-        # If anything goes NaN we need to know NOW.
-        if np.any(np.logical_not(np.isfinite(dh))):
+        # Rate
+        dy[idx_r] = (-ys[idx_r] / tau_m) + R
+
+        # If anything goes numerically funky, die NOW.
+        if np.any(np.logical_not(np.isfinite(dy))):
             raise TypeError("y is not finite at {} seconds.".format(t))
 
-        return dh
+        return dy
 
-    if verbose:
-        print(">>> Done.\n>>> Running the model....")
-
-    idxs = {'R': idx_r, 'G': idx_g, 'S': idx_s, 'Z': idx_conn}
+    idxs = {'IN': idx_in,
+            'INsigma': idx_in_sigma,
+            'H': idx_h,
+            'Hsigma': idx_h_sigma,
+            'R': idx_r,
+            'Z': idx_conn,
+            'Zi': idx_conn_in}
 
     return layers, idxs
 
@@ -226,13 +244,23 @@ def create_layers(stim, pars, seed=42, verbose=True):
 def create_ys0(pars, idxs, frac=0.1):
     """Init the intial value, ys0"""
 
-    max_n = max(max([v[:] for k, v in idxs.items() if k != 'Z']))
-    ys0 = np.zeros(max_n + 1)
-    idx_conn = idxs['Z']
+    exclude = ['Z', 'Zi']
+    max_n = 0
+    for k, idx in idxs.items():
+        if k not in exclude:
+            max_n += len(idx)
 
-    ys0[idxs['R']] = [p[1]['r_0'] for p in pars.pops]
-    ys0[idxs['G']] = (pars.W * frac)[idx_conn]
-    ys0[idxs['S']] = ((pars.W * frac)**2)[idx_conn]
+    ys0 = np.zeros(max_n + 1)
+
+    idx_conn = idxs['Z']
+    idx_conn_in = idxs['Zi']
+
+    # ys0[idxs['R']] = [p[1]['r_0'] for p in pars.pops]
+    ys0[idxs['H']] = (pars.W * frac)[idx_conn]
+    ys0[idxs['Hsigma']] = ((pars.W * frac)**2)[idx_conn]
+
+    ys0[idxs['IN']] = (pars.Wi * frac)[idx_conn_in]
+    ys0[idxs['INsigma']] = ((pars.Wi * frac)**2)[idx_conn_in]
 
     return ys0
 
@@ -241,13 +269,13 @@ if __name__ == "__main__":
     args = docopt(__doc__, version='alpha')
 
     # Simulation parameters ------------------------------------
-    print(">>> Building the model.")
+    # print(">>> Starting the model.")
     seed = int(args['--seed'])
     save_path = args['NAME']
 
     # Load parameters
-    pars = None
     execfile(args['PARS_FILE'])  # returns 'pars'
+    pars = BMparams(pops, conns, backs, inputs, sigma=0, background_res=0)
 
     # Setup time
     t = float(args['-t'])
@@ -260,6 +288,8 @@ if __name__ == "__main__":
     scale = .01 * d
     stim = create_stim_I(t, d, scale, dt=dt, seed=seed)
 
+    stim = create_constant_I(t, d, dt=dt, seed=seed)
+
     # Setup the network
     gn = partial(ornstein_uhlenbeck, sigma=0.01, loc=[])
     fn, idxs = create_layers(stim, pars, seed=seed)
@@ -268,15 +298,22 @@ if __name__ == "__main__":
     ys0 = create_ys0(pars, idxs, frac=0.1)
 
     # Integrate!
+    # print(">>> Running the model.")
     ys = itoint(fn, gn, ys0, times)
 
     # TODO save into h/kdf instead...
-    np.savez("{}".format(save_path),
-             ys=ys,
-             idxs=idxs,
-             ys0=ys0,
-             times=times,
-             stim=np.asarray([stim(t) for t in times]),
-             t=t,
-             dt=dt,
-             seed=seed)
+    save_kdf("{}".format(save_path),
+         ys=ys,
+         ys0=ys0,
+         idx_R=idxs['R'],
+         idx_IN=idxs['IN'],
+         idx_INsigma=idxs['INsigma'],
+         idx_H=idxs['H'],
+         idx_Hsigma=idxs['Hsigma'],
+         times=times,
+         t=t,
+         dt=dt,
+         d=d,
+         stim=np.asarray([stim(t) for t in times]),
+         seed=seed)
+

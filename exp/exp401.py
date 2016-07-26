@@ -10,6 +10,7 @@ from pacological.pars import BMparams
 from pacological.bluemass5 import create_layers, create_ys0
 from pacological.util import create_stim_I, ornstein_uhlenbeck
 from joblib import Parallel, delayed
+from pykdf.kdf import save_kdf, load_kdf
 
 
 def exp(t, dt, save_path, i, seed, d, w_e, w_ie, w_ei, w_ii, w_ee):
@@ -39,10 +40,16 @@ def exp(t, dt, save_path, i, seed, d, w_e, w_ie, w_ei, w_ii, w_ee):
     ys = itoint(fn, gn, ys0, times)
 
     # TODO save into h/kdf instead...
-    np.savez("{}".format(os.path.join(save_path, str(i))),
+    # import pdb; pdb.set_trace()
+
+    save_kdf("{}".format(os.path.join(save_path, str(i))),
              ys=ys,
              ys0=ys0,
-             idxs=idxs,
+             idx_R=idxs['R'],
+             idx_IN=idxs['IN'],
+             idx_INsigma=idxs['INsigma'],
+             idx_H=idxs['H'],
+             idx_Hsigma=idxs['Hsigma'],
              times=times,
              t=t,
              dt=dt,
@@ -71,13 +78,13 @@ if __name__ == "__main__":
 
     # Init params
     r_stims = [10, ]
-    w_es = np.linspace(.1, 1, 5) / 1e3 
+    w_es = [2 / 1e3]
     w_eis = [10 / 1e3, ]
     w_ies = np.linspace(1, 90.0, 20) / 1e3 
-    w_iis = np.linspace(1, 20.0, 5) / 1e3 
-    w_ees = np.linspace(1, 20.0, 5) / 1e3 
+    w_iis = np.linspace(1, 20.0, 2) / 1e3 
+    w_ees = np.linspace(1, 20.0, 2) / 1e3 
     params = product(r_stims, w_es, w_ies, w_eis, w_iis, w_ees)
 
-    Parallel(n_jobs=6, verbose=5)(
+    Parallel(n_jobs=1, verbose=5)(
         delayed(exp)(t, dt, save_path, i, seed, *p)
         for i, (p) in enumerate(params))

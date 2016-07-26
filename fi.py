@@ -49,7 +49,7 @@ def create_phi_zandt(Is, rates, delI):
 def N(I, u, sigma):
     """Network current distribution."""
 
-    a = (1 / (sigma * np.sqrt(2 * np.pi)))
+    a = (1 / (np.sqrt(sigma * 2 * np.pi)))
 
     return a * np.exp(-0.5 * ((I - u) / sigma)**2)
 
@@ -65,8 +65,10 @@ def lif(time,
         tau_e=5e-3,
         tau_i=10e-3,
         g_l=10e-9,
+        n_burst=None,
         verbose=True,
-        fixed=12):
+        fixed=12,
+        return_trains=False):
 
     if verbose:
         print(">>> Creating fi.")
@@ -108,6 +110,7 @@ def lif(time,
     """
 
     # The background noise
+    # TODO - add bursting
     if f > 0:
         f = f * Hz
         P_be = NeuronGroup(N,
@@ -129,12 +132,14 @@ def lif(time,
                       reset='v = Er',
                       refractory=2 * ms,
                       method='rk2')
-    P_e.v = Ereset
+
+    P_e.v = Eresetc
     P_e.I = Is * volt
 
     # Set up the 'network'
     C_be = Synapses(P_be, P_e, on_pre='g_e += w_e')
     C_be.connect('i == j')
+    
     C_bi = Synapses(P_bi, P_e, on_pre='g_i += w_i')
     C_bi.connect('i == j')
 
@@ -167,7 +172,10 @@ def lif(time,
     g_es = traces_e.g_e_
     g_is = traces_e.g_i_
 
-    return rates
+    if return_trains:
+        return rates, trains
+    else:
+        return rates
 
 
 @memory.cache

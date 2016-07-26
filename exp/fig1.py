@@ -1,0 +1,100 @@
+import sys, os
+import numpy as np
+from pacological.fi import lif
+from pykdf.kdf import save_kdf, load_kdf
+import fakespikes.util as sp
+
+# --
+save_path = sys.argv[1]
+
+# Const params
+t = 20
+
+Is = np.linspace(0, 250e-3, 100)
+w_e = 4e-9
+w_i = 3.87 * w_e # 1.6e-8
+
+# --
+# a) on/off
+r_e = 135
+r_i = 135
+
+f = 0
+fi1, trains1 = lif(t,
+                   Is,
+                   f,
+                   r_e=r_e,
+                   r_i=r_i,
+                   w_e=w_e,
+                   w_i=w_i,
+                   return_trains=True)
+ns1, ts1 = sp.spikedict_to(trains1)
+
+f = 10
+fi2, trains2 = lif(t,
+                   Is,
+                   f,
+                   r_e=r_e,
+                   r_i=r_i,
+                   w_e=w_e,
+                   w_i=w_i,
+                   return_trains=True)
+ns2, ts2 = sp.spikedict_to(trains2)
+
+save_kdf(
+    os.path.join(save_path, "a"),
+    Is=Is,
+    f=10,
+    fixed=1,
+    osc=2,
+    fi1=fi1,
+    fi2=fi2,
+    ns1=ns1,
+    ts1=ts1,
+    ns2=ns2,
+    ts2=ts2)
+
+# --
+# b) peak/trough
+# we turn osc off because were estimating gain at peak/trough by
+# simulating at the peak/trough rates for longer periods of time than 
+# the peak/trough lasts peak.
+f = 0
+
+# peak
+r_e = 135
+r_i = 135
+fi1, trains1 = lif(t,
+                   Is,
+                   f,
+                   r_e=r_e,
+                   r_i=r_i,
+                   w_e=w_e,
+                   w_i=w_i,
+                   return_trains=True)
+ns1, ts1 = sp.spikedict_to(trains1)
+
+# trough
+r_e = 12
+r_i = 12
+fi2, trains2 = lif(t,
+                   Is,
+                   f,
+                   r_e=r_e,
+                   r_i=r_i,
+                   w_e=w_e,
+                   w_i=w_i,
+                   return_trains=True)
+ns2, ts2 = sp.spikedict_to(trains2)
+
+save_kdf(
+    os.path.join(save_path, "b"),
+    peak=1,
+    trough=2,
+    Is=Is,
+    fi1=fi1,
+    fi2=fi2,
+    ns1=ns1,
+    ts1=ts1,
+    ns2=ns2,
+    ts2=ts2)
