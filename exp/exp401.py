@@ -31,7 +31,7 @@ def exp(t, dt, save_path, i, seed, d, w_e, w_ie, w_ei, w_ii, w_ee):
 
     # System
     gn = partial(ornstein_uhlenbeck, sigma=0.01, loc=[])
-    fn, idxs = create_layers(stim, pars, seed=seed, verbose=False)
+    fn, idxs = create_layers(stim, pars, seed=seed)
 
     # Init the intial values
     ys0 = create_ys0(pars, idxs, frac=0.1)
@@ -60,6 +60,7 @@ def exp(t, dt, save_path, i, seed, d, w_e, w_ie, w_ei, w_ii, w_ee):
              w_ie=w_ie,
              w_ii=w_ii)
 
+
 if __name__ == "__main__":
     seed = 42
 
@@ -75,14 +76,13 @@ if __name__ == "__main__":
 
     # Init params
     r_stims = [10, ]
-    # w_es = np.linspace(2, 10, 3) / 1e3 
-    w_es = [10 / 1e3, ]
+    w_es = [2 / 1e3]
     w_eis = [10 / 1e3, ]
     w_ies = np.linspace(1, 90.0, 20) / 1e3 
-    w_iis = np.linspace(1, 20.0, 5) / 1e3 
-    w_ees = np.linspace(1, 20.0, 5) / 1e3 
+    w_iis = np.linspace(1, 20.0, 2) / 1e3 
+    w_ees = np.linspace(1, 20.0, 2) / 1e3 
     params = product(r_stims, w_es, w_ies, w_eis, w_iis, w_ees)
 
-    Parallel(n_jobs=6, verbose=6)(
+    Parallel(n_jobs=1, verbose=5)(
         delayed(exp)(t, dt, save_path, i, seed, *p)
         for i, (p) in enumerate(params))

@@ -8,6 +8,10 @@ from scipy.interpolate import interp1d
 import pacological as pac
 from pacological.util import progressbar
 
+from fakespikes.rates import bursts
+from fakespikes.neurons import Spikes
+import fakespikes.util as sp
+
 import os
 from tempfile import mkdtemp
 from joblib import Memory
@@ -49,7 +53,7 @@ def create_phi_zandt(Is, rates, delI):
 def N(I, u, sigma):
     """Network current distribution."""
 
-    a = (1 / (sigma * np.sqrt(2 * np.pi)))
+    a = (1 / (np.sqrt(sigma * 2 * np.pi)))
 
     return a * np.exp(-0.5 * ((I - u) / sigma)**2)
 
@@ -65,8 +69,11 @@ def lif(time,
         tau_e=5e-3,
         tau_i=10e-3,
         g_l=10e-9,
+        n_bursts=None,
         verbose=True,
-        fixed=12):
+        min_rate=12,
+        back_seed=42,
+        return_trains=False):
 
     if verbose:
         print(">>> Creating fi.")
@@ -109,15 +116,22 @@ def lif(time,
 
     # The background noise
     if f > 0:
-        f = f * Hz
-        P_be = NeuronGroup(N,
-                           'rates = r_e * cos(2 * pi * f * t) : Hz',
-                           threshold='rand()<rates*dt',
-                           method='rk2')
-        P_bi = NeuronGroup(N,
-                           'rates = r_i * cos(2 * pi * f * t) : Hz',
-                           threshold='rand()<rates*dt',
-                           method='rk2')
+        nrns_e = Spikes(N, time, dt=1e-3, seed=back_seed)
+        nrns_i = Spikes(N, time, dt=1e-3, seed=back_seed + 1)
+
+        b_times = nrns_e.times
+
+        burst_e = bursts(b_times, float(r_e), f, n_bursts, min_a=min_rate)
+        burst_i = bursts(b_times, float(r_i), f, n_bursts, min_a=min_rate)
+
+        spks_e = nrns_e.poisson(burst_e)
+        spks_i = nrns_i.poisson(burst_i)
+
+        ns_e, ts_e = sp.to_spiketimes(b_times, spks_e)
+        ns_i, ts_i = sp.to_spiketimes(b_times, spks_i)
+
+        P_be = SpikeGeneratorGroup(N, ns_e, ts_e * second)
+        P_bi = SpikeGeneratorGroup(N, ns_i, ts_i * second)
     else:
         P_be = PoissonGroup(N, r_e)
         P_bi = PoissonGroup(N, r_i)
@@ -129,24 +143,16 @@ def lif(time,
                       reset='v = Er',
                       refractory=2 * ms,
                       method='rk2')
+
     P_e.v = Ereset
     P_e.I = Is * volt
 
     # Set up the 'network'
     C_be = Synapses(P_be, P_e, on_pre='g_e += w_e')
     C_be.connect('i == j')
+    
     C_bi = Synapses(P_bi, P_e, on_pre='g_i += w_i')
     C_bi.connect('i == j')
-
-    # Fixed background as well
-    if fixed:
-        P_fe = PoissonGroup(N, fixed * Hz)
-        P_fi = PoissonGroup(N, fixed * Hz)
-
-        C_fe = Synapses(P_fe, P_e, on_pre='g_e += w_e')
-        C_fe.connect('i == j')
-        C_fi = Synapses(P_fi, P_e, on_pre='g_i += w_i')
-        C_fi.connect('i == j')
 
     # Data acq
     spikes_e = SpikeMonitor(P_e)
@@ -166,8 +172,12 @@ def lif(time,
 
     g_es = traces_e.g_e_
     g_is = traces_e.g_i_
+    vs = traces_e.v
 
-    return rates
+    if return_trains:
+        return rates, trains, g_es, g_is, vs
+    else:
+        return rates
 
 
 @memory.cache

@@ -8,9 +8,9 @@ from numpy.random import normal, poisson
 from copy import deepcopy
 
 from fakespikes.rates import stim
-from pacological.util import create_I, ornstein_uhlenbeck
+from pacological.util import create_stim_I, ornstein_uhlenbeck
 from pacological.util import phi as phi_i
-from convenience.numpy import save_hdfz, load_hdfz
+# from convenience.numpy import save_hdfz, load_hdfz
 
 def Idist(I, Iu, Isigma):
     a =  (1 / (Isigma * np.sqrt(2 * np.pi)))

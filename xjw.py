@@ -7,7 +7,7 @@ from numpy import abs as npabs
 from numpy import mean as npmean
 from numpy.random import normal
 from fakespikes.rates import stim
-from pacological.util import phi, create_I, ornstein_uhlenbeck
+from pacological.util import phi, create_stim_I, ornstein_uhlenbeck
 
 
 def xjw(rs, t, Istim=None, Je_e=0, Je_i=0, Ji_e=0, Ji_i=0, k1=0.8, k2=1.2):
@@ -97,7 +97,7 @@ if __name__ == "__main__":
     # Stim params
     d = 1  # drive rate (want 0-1)
     scale = .01 * d
-    Istim = create_I(tmax, d, scale, dt=dt, seed=1)
+    Istim = create_stim_I(tmax, d, scale, dt=dt, seed=1)
 
     # Simulate
     times = linspace(0, tmax, tmax / dt)

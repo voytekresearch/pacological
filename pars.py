@@ -68,7 +68,6 @@ class BMparams(object):
 
         self.sigma = sigma
         self.I_max = I_max
-
         self.t_back = t_back
         self.background_res = background_res
 
@@ -86,6 +85,7 @@ class BMparams(object):
         self.Zi = np.zeros(n_pop)  # Connecitvity
         self.Wi = np.zeros(n_pop)  # Weights
         self.Ci = np.zeros(n_pop)  # Connection number
+        self.Cistd = np.zeros(n_pop)  
         self.Ki = np.zeros(n_pop)  # Tau
         self.Ti = np.zeros(n_pop)  # Cell type
 
@@ -101,6 +101,11 @@ class BMparams(object):
         self.C = np.zeros((n_pop, n_pop), dtype=np.int)
         self.Cstd = np.zeros((n_pop, n_pop), dtype=np.int)
         self.V = np.zeros((n_pop, n_pop))
+        self.I_bias = np.zeros(self.n_pop)
+
+        # Populate drive
+        for j, (pn, pr) in enumerate(pops):
+            self.I_bias[j] = pr['bias']
 
         # Populate network
         for p1, p2, pr in conns:
@@ -115,8 +120,8 @@ class BMparams(object):
             self.K[i, j] = pr['tau_decay']
             self.Kstd[i, j] = pr['tau_decay_std']
 
-            self.C[i, j] = int(pops[i][1]['n'] * pr['p'] * pr['c'])
-            self.Cstd[i, j] = int(pops[i][1]['n'] * pr['p'] * pr['c_std'])
+            self.C[i, j] = int(pops[i][1]['n'] * pr['p'])
+            self.Cstd[i, j] = int(pops[i][1]['n'] * pr['p'] * (1 - pr['p']))
 
             self.CS[i, j] = int(pr['c'])
             self.CSstd[i, j] = int(pr['c_std'])
@@ -139,7 +144,8 @@ class BMparams(object):
             self.Zi[i] = 1
             self.Wi[i] = pr['w']
             self.Ki[i] = pr['tau_decay']
-            self.Ci[i] = int(pr['c'])
+            self.Ci[i] = int(pr['n'] * pr['p'])
+            self.Cistd[i] = int(pr['n'] * pr['p'] * (1 - pr['p']))
 
             if pr['type'] == 'E':
                 self.Ti[i] = 1
@@ -147,3 +153,7 @@ class BMparams(object):
                 self.Ti[i] = -1
             else:
                 raise ValueError("Unknown cell type in input {}.".format(p1))
+
+        self.Vi = np.zeros_like(self.Wi)
+        self.Vi[self.Ti == 1] = self.Vampa - self.Vth
+        self.Vi[self.Ti == -1] = self.Vgaba - self.Vth

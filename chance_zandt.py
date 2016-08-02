@@ -13,9 +13,9 @@ from numpy import random
 from copy import deepcopy
 
 from fakespikes.rates import stim
-from pacological.util import create_I, ornstein_uhlenbeck
+from pacological.util import create_stim_I, ornstein_uhlenbeck
 from pacological.util import phi as phi_i
-from convenience.numpy import save_hdfz, load_hdfz
+# from convenience.numpy import save_hdfz, load_hdfz
 
 # Control background 
 SEED = 42
@@ -170,7 +170,7 @@ if __name__ == "__main__":
     from convenience.numpy import save_hdfz, load_hdfz
 
     from fakespikes.rates import stim
-    from pacological.util import create_I, ornstein_uhlenbeck
+    from pacological.util import create_stim_I, ornstein_uhlenbeck
 
     # print(">>> Initializing constants")
 
@@ -188,7 +188,7 @@ if __name__ == "__main__":
     # Stim params
     d = 400e-9  # drive rate (want 0-1)
     scale = .001 * d
-    Istim = create_I(tmax, d, scale, dt=dt, seed=1)
+    Istim = create_stim_I(tmax, d, scale, dt=dt, seed=1)
 
     # Weights
     # w_ee = 0e-9
