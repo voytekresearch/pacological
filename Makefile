@@ -661,9 +661,9 @@ exp301:
 exp400:
 	-mkdir data/exp400
 	-rm data/exp400/*
-	nice -19 python exp/exp400.py pars/pars_test.py data/exp400/ 
+	nice -19 python exp/exp400.py pars/pars_ei_f0.py data/exp400/ 
 
 exp401:
 	-mkdir data/exp401
 	-rm data/exp401/*
-	nice -19 python exp/exp401.py pars/pars_test_f10.py data/exp401/ 
+	nice -19 python exp/exp400.py pars/pars_ei_f10.py data/exp401/ 

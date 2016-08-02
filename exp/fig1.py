@@ -8,19 +8,19 @@ import fakespikes.util as sp
 save_path = sys.argv[1]
 
 # Const params
-t = 20
+t = 60
 
-Is = np.linspace(0, 250e-3, 100)
+Is = np.linspace(0, 200e-3, 100)
 w_e = 4e-9
-w_i = 3.87 * w_e # 1.6e-8
+w_i = 3.91 * w_e 
 
 # --
 # a) on/off
-r_e = 135
-r_i = 135
+r_e = 125
+r_i = 125
 
 f = 0
-fi1, trains1 = lif(t,
+fi1, trains1, ge1, gi1, v1 = lif(t,
                    Is,
                    f,
                    r_e=r_e,
@@ -31,7 +31,7 @@ fi1, trains1 = lif(t,
 ns1, ts1 = sp.spikedict_to(trains1)
 
 f = 10
-fi2, trains2 = lif(t,
+fi2, trains2, ge2, gi2, v2 = lif(t,
                    Is,
                    f,
                    r_e=r_e,
@@ -52,7 +52,14 @@ save_kdf(
     ns1=ns1,
     ts1=ts1,
     ns2=ns2,
-    ts2=ts2)
+    ts2=ts2,
+    ge1=ge1,
+    gi1=gi1,
+    v1=v1,
+    ge2=ge2,
+    gi2=gi2,
+    v2=v2,
+)
 
 # --
 # b) peak/trough
@@ -62,9 +69,9 @@ save_kdf(
 f = 0
 
 # peak
-r_e = 135
-r_i = 135
-fi1, trains1 = lif(t,
+r_e = 125
+r_i = 125
+fi1, trains1, ge1, gi1, v1 = lif(t,
                    Is,
                    f,
                    r_e=r_e,
@@ -77,7 +84,7 @@ ns1, ts1 = sp.spikedict_to(trains1)
 # trough
 r_e = 12
 r_i = 12
-fi2, trains2 = lif(t,
+fi2, trains2, ge2, gi2, v2 = lif(t,
                    Is,
                    f,
                    r_e=r_e,
@@ -97,4 +104,10 @@ save_kdf(
     ns1=ns1,
     ts1=ts1,
     ns2=ns2,
-    ts2=ts2)
+    ts2=ts2,
+    ge1=ge1,
+    gi1=gi1,
+    v1=v1,
+    ge2=ge2,
+    gi2=gi2,
+    v2=v2)

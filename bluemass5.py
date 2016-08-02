@@ -3,7 +3,8 @@
     [--seed STIM_SEED]
     [--dt DT]
     [--r_stim=RATE] 
-    
+    [--verbose]
+
 Simulate the Blue Brain using gNMMs.
 
     Arguments:
@@ -16,6 +17,7 @@ Simulate the Blue Brain using gNMMs.
         --seed STIM_SEED        seed for creating the stimulus [default: 1]
         --dt DT                 time resolution [default: 1e-3]
         --r_stim=RATE           stimulus firing rate firing rate (Hz) [default: 10]
+        --verbose               display progress
 
 """
 from __future__ import division
@@ -77,7 +79,8 @@ def create_layers(stim, pars, seed=42, verbose=True):
 
     # Network
     Z = pars.Z  # Input
-    C = pars.C  # Total synapse number
+    C = pars.C  # Connection number
+    Cstd = pars.CSstd
     W = pars.W  # Weights
     T = pars.T  # Connection type E:1, I:-1
     V = pars.V  # Eff. voltage drive at synapses
@@ -145,6 +148,9 @@ def create_layers(stim, pars, seed=42, verbose=True):
         G = H * C
         Gi = IN * Ci
 
+        Cprime = Cstd  # approximatly
+        S = (Cstd * G**2) + (Cprime * S)  # Use S**2 instead?
+
         R = np.zeros(n_pop)
 
         for j in range(n_pop):
@@ -152,11 +158,11 @@ def create_layers(stim, pars, seed=42, verbose=True):
 
             # I(t)
             I = np.dot(G[:, j], V[:, j]) + np.dot(Gi[j], Vi[j]) + I_bias[j]
-            if I > I_max:
-                I = I_max
+            I = np.min([I, I_max])
 
             # I_sigma(t)
-            Isigma = np.abs(I)  # TODO; correct math fron Zandt
+            # Isigma = np.abs(I)  # TODO; correct math fron Zandt
+            Isigma = np.dot(S[:, j], V[:, j])
 
             # FI
             # - Params
@@ -193,14 +199,14 @@ def create_layers(stim, pars, seed=42, verbose=True):
                      tau_e=tau_e,
                      tau_i=tau_i,
                      verbose=verbose)
-
-
+            
             # Calculate network variance, g(t)
             g = normal(I_fis, I, Isigma)
 
             # Estimate network firing rate, r_t(t)
             # (this is PHI, the network non-linearity)
             R[j] = np.trapz(fi * g, I_fis)
+            # print("{} R: {}, I {}".format(pars.names[j], R[j], I*1000))
 
             # TODO FI_sigma
 
@@ -273,6 +279,10 @@ if __name__ == "__main__":
     seed = int(args['--seed'])
     save_path = args['NAME']
 
+    verbose = False
+    if args['--verbose']:
+        verbose = True
+
     # Load parameters
     execfile(args['PARS_FILE'])  # returns 'pars'
     pars = BMparams(pops, conns, backs, inputs, sigma=0, background_res=0)
@@ -287,12 +297,11 @@ if __name__ == "__main__":
     d = float(args['--r_stim'])
     scale = .01 * d
     stim = create_stim_I(t, d, scale, dt=dt, seed=seed)
-
-    stim = create_constant_I(t, d, dt=dt, seed=seed)
+    # stim = create_constant_I(t, d, dt=dt, seed=seed)
 
     # Setup the network
     gn = partial(ornstein_uhlenbeck, sigma=0.01, loc=[])
-    fn, idxs = create_layers(stim, pars, seed=seed)
+    fn, idxs = create_layers(stim, pars, seed=seed, verbose=False)
 
     # Init the intial values
     ys0 = create_ys0(pars, idxs, frac=0.1)
@@ -301,7 +310,6 @@ if __name__ == "__main__":
     # print(">>> Running the model.")
     ys = itoint(fn, gn, ys0, times)
 
-    # TODO save into h/kdf instead...
     save_kdf("{}".format(save_path),
          ys=ys,
          ys0=ys0,
@@ -311,6 +319,7 @@ if __name__ == "__main__":
          idx_H=idxs['H'],
          idx_Hsigma=idxs['Hsigma'],
          times=times,
+         names=pars.names,
          t=t,
          dt=dt,
          d=d,

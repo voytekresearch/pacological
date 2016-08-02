@@ -39,9 +39,7 @@ def exp(t, dt, save_path, i, seed, d, w_e, w_ie, w_ei, w_ii, w_ee):
     # Integrate!
     ys = itoint(fn, gn, ys0, times)
 
-    # TODO save into h/kdf instead...
-    # import pdb; pdb.set_trace()
-
+    # Save results
     save_kdf("{}".format(os.path.join(save_path, str(i))),
              ys=ys,
              ys0=ys0,
