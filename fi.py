@@ -71,7 +71,7 @@ def lif(time,
         g_l=10e-9,
         n_bursts=None,
         verbose=True,
-        min_rate=12,
+        min_rate=30,
         back_seed=42,
         return_trains=False):
 
