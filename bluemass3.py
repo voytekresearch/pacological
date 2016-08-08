@@ -29,7 +29,8 @@ from scipy.interpolate import interp1d
 import numpy as np
 from numpy import random
 from fakespikes.rates import stim
-from pacological.util import create_I, ornstein_uhlenbeck
+from pacological.util import create_stim_I, create_constant_I
+from pacological.util import ornstein_uhlenbeck
 from pacological.fi import lif
 from pacological.fi import N as normal
 from pacological.pars import BMparams

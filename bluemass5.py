@@ -22,49 +22,61 @@ Simulate the Blue Brain using gNMMs.
 """
 from __future__ import division
 from docopt import docopt
-import os, sys
+import os, sys, csv
 from copy import deepcopy
 from sdeint import itoint
-
 import numpy as np
 from numpy import random
-from fakespikes.rates import stim
+from scipy.interpolate import interp1d
+
+from fakespikes.rates import bursts, constant, stim
+from fakespikes.util import create_times
+from fakespikes.neurons import Spikes
+
 from pacological.util import create_stim_I, create_constant_I
 from pacological.util import ornstein_uhlenbeck
 from pacological.pars import perturb_params
 from pacological.pars import BMparams
 from pacological.fi import lif
 from pacological.fi import N as normal
-import warnings
+
 from functools import partial
 from pykdf.kdf import save_kdf, load_kdf
 
 
-def background(t, f, rbe, rbi, min_rate=12, prng=None):
+def create_background(times, f, r_e, r_i, min_rate=30, n_bursts=None, 
+        prng=None):
+
     if prng is None:
         prng = random.RandomState()
 
+    # The background drives rates
     if f > 0:
-        # oscillation
-        rbe0 = rbe * np.cos(2 * np.pi * f * t)
-        rbi0 = rbi * np.cos(2 * np.pi * f * t)
-    else:
-        # fixed rate
-        rbe0 = deepcopy(rbe)
-        rbi0 = deepcopy(rbi)
+        rates_e = bursts(times, float(r_e), f, n_bursts, min_a=min_rate)
+        rates_i = bursts(times, float(r_i), f, n_bursts, min_a=min_rate)
+    else: 
+        rates_e = constant(times, r_e)
+        rates_i = constant(times, r_i)
 
-    if rbe0 < min_rate:
-        rbe0 = min_rate
-    if rbi0 < min_rate:
-        rbi0 = min_rate
+    def time_index(t):
+        return (np.abs(times - t)).argmin()
 
-    rbe_t = prng.poisson(rbe0, 1)
-    rbi_t = prng.poisson(rbi0, 1)
+    # Define a function to sample rates at t
+    def background(t):
+        i = time_index(t)
 
-    return rbe_t[0], rbi_t[0], rbe0, rbi0, prng
+        r_e_0 = rates_e[i]
+        r_i_0 = rates_i[i]
+
+        r_e_t = prng.poisson(r_e_0, 1)[0]
+        r_i_t = prng.poisson(r_i_0, 1)[0]
+
+        return r_e_t, r_i_t, r_e_0, r_i_0, prng
+
+    return background, prng
 
 
-def create_layers(stim, pars, seed=42, verbose=True):
+def create_layers(times, stim, pars, seed=42, verbose=True, debug=False):
     global prng
     prng = random.RandomState(seed)
 
@@ -80,7 +92,7 @@ def create_layers(stim, pars, seed=42, verbose=True):
     # Network
     Z = pars.Z  # Input
     C = pars.C  # Connection number
-    Cstd = pars.CSstd
+    Cstd = pars.Cstd
     W = pars.W  # Weights
     T = pars.T  # Connection type E:1, I:-1
     V = pars.V  # Eff. voltage drive at synapses
@@ -91,6 +103,7 @@ def create_layers(stim, pars, seed=42, verbose=True):
     # Input
     Zi = pars.Zi  # Input
     Ci = pars.Ci  # Total synapse number
+    Cistd = pars.Cistd 
     Wi = pars.Wi  # Weights
     Ti = pars.Ti  # Connection type E:1, I:-1
     Ki = pars.Ki  # Taus
@@ -131,8 +144,23 @@ def create_layers(stim, pars, seed=42, verbose=True):
     INsigma = np.zeros_like(Wi)
 
     # Setup valid FI window
-    I_fis = np.linspace(0, I_max, 500)
+    I_fis = np.linspace(0, I_max, 100)
 
+    # Create background fns
+    backgrounds = []
+    for j in range(n_pop):
+        b = pars.backs[j][1]
+
+        f = b['f']
+        r_e = b['r_e']
+        r_i = b['r_i']
+        min_r = b['min_r']
+        n_bursts = b['n_bursts']
+
+        b, prng = create_background(times, f, r_e, r_i, 
+                min_rate=min_r, n_bursts=n_bursts, prng=prng)
+
+        backgrounds.append(b)
 
     def layers(ys, t):
         """A layered gNMM model."""
@@ -149,9 +177,13 @@ def create_layers(stim, pars, seed=42, verbose=True):
         Gi = IN * Ci
 
         Cprime = Cstd  # approximatly
-        S = (Cstd * G**2) + (Cprime * S)  # Use S**2 instead?
+        S = (Cstd * G**2) + (Cprime * Hsigma)  # Use S**2 instead?
+
+        Ciprime = Cistd
+        Si = (Cistd * Gi**2) + (Ciprime * INsigma)  # Use S**2 instead?
 
         R = np.zeros(n_pop)
+        Rsigma = np.zeros(n_pop)
 
         for j in range(n_pop):
             dy = np.zeros_like(ys)
@@ -159,63 +191,82 @@ def create_layers(stim, pars, seed=42, verbose=True):
             # I(t)
             I = np.dot(G[:, j], V[:, j]) + np.dot(Gi[j], Vi[j]) + I_bias[j]
             I = np.min([I, I_max])
+            I = np.max([0, I])
 
             # I_sigma(t)
-            # Isigma = np.abs(I)  # TODO; correct math fron Zandt
-            Isigma = np.dot(S[:, j], V[:, j])
+            # Isigma = np.abs(I / 10)   # TODO; correct math fron Zandt
+            Isigma = 5e-3
+            # Isigma = np.dot(S[:, j], V[:, j]**2) + np.dot(Si[j], Vi[j]**2)
 
-            # FI
+            # print "--"
+            # print j
+            # print I * 1000, Isigma * 1000
+
+            # - FI(t)
             # - Params
             b = pars.backs[j][1]
-            f = b['f']
-            r_e = b['r_e']
-            r_i = b['r_i']
             w_e = b['w_e']
             w_i = b['w_i']
             tau_e = b['tau_e']
             tau_i = b['tau_e']
 
-            # - Background params
-            # stocastic
-            # rbe, rbi, _, _, prng = background(t, f, r_e, r_i, prng=prng)
+            # Background params
+            # Stocastic
+            rbe, rbi, _, _, prng = backgrounds[j](t)
 
             # Deterministic
-            _, _, rbe, rbi, prng = background(t, f, r_e, r_i, prng=prng)
-
-            # Calculate single neuron fi curve
-            #
+            _, _, rbe, rbi, prng = backgrounds[j](t)
+            
             # Round the poisson rate output so `lif` is not 
             # called with EVERY iteration.
             rbe = np.round(rbe, background_res)
             rbi = np.round(rbi, background_res)
 
+            # Calculate single neuron fi curve
             fi = lif(t_back,
                      I_fis,
-                     f,
+                     0,  # Osc is taken care of by backgrounds
                      rbe,
                      rbi,
                      w_e,
                      w_i,
                      tau_e=tau_e,
                      tau_i=tau_i,
+                     min_rate=0,  # min_rate taken care by backgrounds
                      verbose=verbose)
             
             # Calculate network variance, g(t)
             g = normal(I_fis, I, Isigma)
+            # g /= g.max()
 
             # Estimate network firing rate, r_t(t)
             # (this is PHI, the network non-linearity)
-            R[j] = np.trapz(fi * g, I_fis)
-            # print("{} R: {}, I {}".format(pars.names[j], R[j], I*1000))
+            if Isigma < 1e-10:
+                R[j] = interp1d(I_fis, fi)(I)
+                Rsigma[j] = 0.0
+            else:
+                R[j] = np.trapz(fi * g, I_fis)
+                Rsigma[j] = np.trapz((fi - R[j])**2 * g, I_fis)
 
-            # TODO FI_sigma
-
+            if debug:
+                with open('I.csv', 'a') as f:
+                    writer = csv.writer(f)
+                    writer.writerow([I, ])
+                with open('Isigma.csv', 'a') as f:
+                    writer = csv.writer(f)
+                    writer.writerow([Isigma, ])
+                with open('fi.csv', 'a') as f:
+                    writer = csv.writer(f)
+                    writer.writerow(fi)
+                with open('g.csv', 'a') as f:
+                    writer = csv.writer(f)
+                    writer.writerow(g)
         # H
         dy[idx_h] = ((-H / K) + (W * C * R))[idx_conn].flatten()
 
         # Hsigma
         dy[idx_h_sigma] = ((-2 * (Hsigma / K)) + (
-            (W * C)**2 * R))[idx_conn].flatten()
+            (W * C)**2 * Rsigma))[idx_conn].flatten()
 
         # Stim
         R_stim = prng.poisson(stim(t), 1)[0] * Zi
@@ -285,23 +336,23 @@ if __name__ == "__main__":
 
     # Load parameters
     execfile(args['PARS_FILE'])  # returns 'pars'
-    pars = BMparams(pops, conns, backs, inputs, sigma=0, background_res=0)
+    pars = BMparams(pops, conns, backs, inputs, sigma=0, background_res=0,
+            I_max=50e-3)
 
     # Setup time
     t = float(args['-t'])
     dt = float(args['--dt'])
-    n_step = int(np.ceil(t / dt))
-    times = np.linspace(0, t, n_step)
+    times = create_times(t, dt)
 
     # Setup stimulus
     d = float(args['--r_stim'])
     scale = .01 * d
-    stim = create_stim_I(t, d, scale, dt=dt, seed=seed)
-    # stim = create_constant_I(t, d, dt=dt, seed=seed)
+    stim = create_stim_I(times, d, scale,  seed=seed)
+    # stim = create_constant_I(times, d, seed=seed)
 
     # Setup the network
     gn = partial(ornstein_uhlenbeck, sigma=0.01, loc=[])
-    fn, idxs = create_layers(stim, pars, seed=seed, verbose=False)
+    fn, idxs = create_layers(times, stim, pars, seed=seed, verbose=False, debug=True)
 
     # Init the intial values
     ys0 = create_ys0(pars, idxs, frac=0.1)

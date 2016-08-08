@@ -10,8 +10,7 @@ def phi(Isyn, I, c, g):
     return ((c * Isyn) - I) / (1 - exp(-g * ((c * Isyn) - I)))
 
 
-def create_stim_I(tmax, d, scale, dt=1, seed=None):
-    times = linspace(0, tmax, tmax/dt)
+def create_stim_I(times, d, scale, seed=None):
     rates = stim(times, d, scale, seed)
     
     def I(t):
@@ -21,8 +20,7 @@ def create_stim_I(tmax, d, scale, dt=1, seed=None):
     return I
 
 
-def create_constant_I(tmax, d, dt=1, seed=None):
-    times = linspace(0, tmax, tmax/dt)
+def create_constant_I(times, d, seed=None):
     rates = constant(times, d)
     
     def I(t):

@@ -1,6 +1,7 @@
 """Explore the bluemass5 parameter space"""
 from __future__ import division
 import os, sys
+from fakespikes.util import create_times
 from copy import deepcopy
 from functools import partial
 from sdeint import itoint
@@ -19,7 +20,7 @@ def exp(t, dt, save_path, i, seed, d, w_e, w_ie, w_ei, w_ii, w_ee):
 
     # Reinit stim
     scale = .01 * d
-    stim = create_stim_I(t, d, scale, dt=dt, seed=seed)
+    stim = create_stim_I(times, scale, dt=dt, seed=seed)
 
     # Network
     conns[0][2]['w'] = w_ee
@@ -70,8 +71,7 @@ if __name__ == "__main__":
     # Setup time
     t = 1.0
     dt = 1e-3
-    n_step = int(np.ceil(t / dt))
-    times = np.linspace(0, t, n_step)
+    times = create_times(t, dt)
 
     # Init params
     r_stims = [10, ]
@@ -83,6 +83,6 @@ if __name__ == "__main__":
     w_ees = np.linspace(1, 20.0, 5) / 1e3 
     params = product(r_stims, w_es, w_ies, w_eis, w_iis, w_ees)
 
-    Parallel(n_jobs=6, verbose=6)(
-        delayed(exp)(t, dt, save_path, i, seed, *p)
+    Parallel(n_jobs=10, verbose=6)(
+        delayed(exp)(times, save_path, i, seed, *p)
         for i, (p) in enumerate(params))

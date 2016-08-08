@@ -10,14 +10,15 @@ save_path = sys.argv[1]
 # Const params
 t = 60
 
-Is = np.linspace(0, 200e-3, 100)
+Is = np.linspace(0, 50e-3, 100)
 w_e = 4e-9
 w_i = 3.91 * w_e 
 
 # --
 # a) on/off
-r_e = 125
-r_i = 125
+r_e = 135
+r_i = 135
+min_rate = 30
 
 f = 0
 fi1, trains1, ge1, gi1, v1 = lif(t,
@@ -27,6 +28,7 @@ fi1, trains1, ge1, gi1, v1 = lif(t,
                    r_i=r_i,
                    w_e=w_e,
                    w_i=w_i,
+                   min_rate=min_rate,
                    return_trains=True)
 ns1, ts1 = sp.spikedict_to(trains1)
 
@@ -38,6 +40,7 @@ fi2, trains2, ge2, gi2, v2 = lif(t,
                    r_i=r_i,
                    w_e=w_e,
                    w_i=w_i,
+                   min_rate=min_rate,
                    return_trains=True)
 ns2, ts2 = sp.spikedict_to(trains2)
 
@@ -69,8 +72,8 @@ save_kdf(
 f = 0
 
 # peak
-r_e = 125
-r_i = 125
+r_e = 135
+r_i = 135
 fi1, trains1, ge1, gi1, v1 = lif(t,
                    Is,
                    f,
@@ -78,12 +81,13 @@ fi1, trains1, ge1, gi1, v1 = lif(t,
                    r_i=r_i,
                    w_e=w_e,
                    w_i=w_i,
+                   min_rate=min_rate,
                    return_trains=True)
 ns1, ts1 = sp.spikedict_to(trains1)
 
 # trough
-r_e = 12
-r_i = 12
+r_e = 30
+r_i = 30
 fi2, trains2, ge2, gi2, v2 = lif(t,
                    Is,
                    f,
@@ -91,6 +95,7 @@ fi2, trains2, ge2, gi2, v2 = lif(t,
                    r_i=r_i,
                    w_e=w_e,
                    w_i=w_i,
+                   min_rate=min_rate,
                    return_trains=True)
 ns2, ts2 = sp.spikedict_to(trains2)
 

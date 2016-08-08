@@ -4,11 +4,11 @@ import numpy as np
 # For n we are summing over all e-types
 pops = [('L1_E', {'n': 100,
                   'type': 'E',
-                  'r_0': 8, 'bias' : 20e-3}), ('L1_I', {'n': 100,
+                  'r_0': 8, 'bias' : 100e-3}), ('L1_I', {'n': 100,
                                         'type': 'I',
-                                        'r_0': 12, 'bias' : 10e-3})]
+                                        'r_0': 12, 'bias' : 30e-3})]
 
-inputs = [('L1_E', {'w': .4e-3,
+inputs = [('L1_E', {'w': 4e-3,
                     'c': 1,
                     'n': 100,
                     'p': 0.5,

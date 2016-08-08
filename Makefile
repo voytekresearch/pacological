@@ -658,12 +658,57 @@ exp301:
 	nice -19 python exp/exp301.py data/exp301/ | tee data/exp301/log
 
 # Param search
+# flail
 exp400:
 	-mkdir data/exp400
 	-rm data/exp400/*
 	nice -19 python exp/exp400.py pars/pars_ei_f0.py data/exp400/ 
 
+# more flail
 exp401:
 	-mkdir data/exp401
 	-rm data/exp401/*
 	nice -19 python exp/exp400.py pars/pars_ei_f10.py data/exp401/ 
+
+# bias teaks
+exp403:
+	-mkdir data/exp403
+	-rm data/exp403/*
+	nice -19 python exp/exp403.py pars/pars_exp403.py data/exp403/ 
+
+# increase cell number (good effect)
+exp404:
+	-mkdir data/exp404
+	-rm data/exp404/*
+	nice -19 python exp/exp404.py pars/pars_exp404.py data/exp404/ 
+
+# increase cell number agian (this was too far)
+exp405:
+	-mkdir data/exp405
+	-rm data/exp405/*
+	nice -19 python exp/exp404.py pars/pars_exp405.py data/exp405/ 
+
+
+# back off N and bias a little
+# expand w_ei, w_ie search (interesting - look closer at w_ee, w_ii and w_ie)
+exp406:
+	-mkdir data/exp406
+	-rm data/exp406/*
+	nice -19 python exp/exp406.py pars/pars_exp406.py data/exp406/ 
+
+# same as 406, but turn f 10 to f 0 
+# i.e. look alpha gain off
+exp407:
+	-mkdir data/exp407
+	-rm data/exp407/*
+	nice -19 python exp/exp406.py pars/pars_exp407.py data/exp407/ 
+
+# repeat of 406, but set I_max=100e-3
+# looking at reurrent connections role in osc
+# i.e. are the oscillations that arise are reurrent increases
+# due to ceiling effects?
+# (it wasn't. all good. using 50 mV as max if fine for this w range)
+exp408:
+	-mkdir data/exp408
+	-rm data/exp408/*
+	nice -19 python exp/exp406.py pars/pars_exp408.py data/exp408/ 

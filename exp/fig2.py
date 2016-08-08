@@ -10,9 +10,12 @@ save_path = sys.argv[1]
 t = 1
 n_trials = 30
 
-Is = np.linspace(0, 200e-3, 100)
-r_e = 125
-r_i = 125
+Is = np.linspace(0, 50e-3, 100)
+
+r_e = 135
+r_i = 135
+min_rate = 30
+
 w_e = 4e-9
 w_i = 3.91 * w_e
 f = 10
@@ -38,6 +41,7 @@ for a in amps:
                 r_i=r_i * a,
                 w_e=w_e,
                 w_i=w_i,
+                min_rate=min_rate,
                 n_bursts=n_bursts,
                 back_seed=42 * k,
                 verbose=False))
@@ -65,6 +69,7 @@ for n in n_bursts:
                 r_i=r_i,
                 w_e=w_e,
                 w_i=w_i,
+                min_rate=min_rate,
                 n_bursts=n,
                 back_seed=42 * k,
                 verbose=False))
