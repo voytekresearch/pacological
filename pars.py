@@ -56,7 +56,7 @@ class BMparams(object):
                  inputs,
                  sigma=1,
                  t_back=20,
-                 I_max=200e-3,
+                 I_max=50e-3,
                  background_res=0,
                  neuron='lif'):
 
