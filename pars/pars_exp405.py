@@ -2,9 +2,9 @@ import numpy as np
 
 
 # For n we are summing over all e-types
-pops = [('L1_E', {'n': 300,
+pops = [('L1_E', {'n': 200,
                   'type': 'E',
-                  'r_0': 8, 'bias' : 5e-3}), ('L1_I', {'n': 300,
+                  'r_0': 8, 'bias' : 5e-3}), ('L1_I', {'n': 200,
                                         'type': 'I',
                                         'r_0': 12, 'bias' : 30e-3})]
 
