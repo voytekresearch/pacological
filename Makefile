@@ -712,3 +712,19 @@ exp408:
 	-mkdir data/exp408
 	-rm data/exp408/*
 	nice -19 python exp/exp406.py pars/pars_exp408.py data/exp408/ 
+
+# increased n to 1000, decrease p to 0.1
+# (creating a more realistic pop params)
+exp409:
+	-mkdir data/exp409
+	-rm data/exp409/*
+	nice -19 python exp/exp406.py pars/pars_exp409.py data/exp409/ 
+
+# 4:1 balance param exploration
+# (all previous models had a 1:1 balance;
+# which is what Zandt used, but isn't AFAIK
+# really bio-justified)
+exp410:
+	-mkdir data/exp410
+	-rm data/exp410/*
+	nice -19 python exp/exp410.py pars/pars_exp410.py data/exp410/ 

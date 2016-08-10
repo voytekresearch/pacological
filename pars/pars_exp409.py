@@ -2,15 +2,15 @@ import numpy as np
 
 
 # For n we are summing over all e-types
-pops = [('L1_E', {'n': 800,
+pops = [('L1_E', {'n': 1000,
                   'type': 'E',
-                  'r_0': 8, 'bias' : 3e-3}), ('L1_I', {'n': 200,
+                  'r_0': 8, 'bias' : 3e-3}), ('L1_I', {'n': 1000,
                                         'type': 'I',
-                                        'r_0': 12, 'bias' : 20e-3})]
+                                        'r_0': 12, 'bias' : 30e-3})]
 
 inputs = [('L1_E', {'w': 3e-3 ,
                     'c': 1,
-                    'n': 200,
+                    'n': 500,
                     'p': 0.1,
                     'tau_decay': 5e-3,
                     'type': 'E'})]
@@ -42,7 +42,7 @@ conns = [
     # Internal
     ('L1_E', 'L1_E', {'tau_decay': 5e-3,
                       'tau_decay_std': 1e-3,
-                      'w': 2.4e-3,
+                      'w': 2e-3,
                       'w_std': .11e-9,
                       'c': 1.0,
                       'c_std': 0.1,
@@ -56,7 +56,7 @@ conns = [
                       'p': 0.1}),
     ('L1_I', 'L1_E', {'tau_decay': 10e-3,
                       'tau_decay_std': 1e-3,
-                      'w': 8e-3,
+                      'w': 2e-3,
                       'w_std': .11e-9,
                       'c': 1.0,
                       'c_std': 0.1,
