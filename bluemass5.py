@@ -21,8 +21,11 @@ Simulate the Blue Brain using gNMMs.
 
 """
 from __future__ import division
+import os
+import sys
+import csv
+import warnings
 from docopt import docopt
-import os, sys, csv
 from copy import deepcopy
 from sdeint import itoint
 import numpy as np
@@ -190,7 +193,10 @@ def create_layers(times, stim, pars, seed=42, verbose=True, debug=False):
 
             # I(t)
             I = np.dot(G[:, j], V[:, j]) + np.dot(Gi[j], Vi[j]) + I_bias[j]
-            I = np.min([I, I_max])
+            if I > I_max:
+                warnings.warn("Clipping I to {}.".format(I_max))
+                I = I_max
+            # I = np.min([I, I_max])
             I = np.max([0, I])
 
             # I_sigma(t)
