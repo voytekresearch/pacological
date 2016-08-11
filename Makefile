@@ -728,3 +728,27 @@ exp410:
 	-mkdir data/exp410
 	-rm data/exp410/*
 	nice -19 python exp/exp410.py pars/pars_exp410.py data/exp410/ 
+
+# 410 didn't have needed/interesting dynamics.
+#
+# Some more time spent hand tuning (finally cranking up w_e,
+# among other minor tweaks) lead to the improved param set explored 
+# in exp411.
+#
+# Knowing I'm nearing the final set, I lock {w_ii, w_ei, w_e} and do a fine
+# grained exploration of {w_ie, w_ee}
+exp411:
+	-mkdir data/exp411
+	-rm data/exp411/*
+	nice -19 python exp/exp411.py pars/pars_exp411.py data/exp411/ 
+
+# 411 looked very promising... but
+#
+# it never showed I fast oscillations even when there were 
+# fast E oscillations. 
+# Locking w_ie = 20, w_ee to a high range (4-5)
+# to explore a range of w_ii; let's make I wiggle.
+exp412:
+	-mkdir data/exp412
+	-rm data/exp412/*
+	nice -19 python exp/exp412.py pars/pars_exp411.py data/exp412/    
