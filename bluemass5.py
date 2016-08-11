@@ -24,7 +24,10 @@ from __future__ import division
 import os
 import sys
 import csv
+
 import warnings
+warnings.simplefilter("always")
+
 from docopt import docopt
 from copy import deepcopy
 from sdeint import itoint
@@ -88,6 +91,7 @@ def create_layers(times, stim, pars, seed=42, verbose=True, debug=False):
 
     # Unpack pars
     n_pop = pars.n_pop
+    names = pars.names
     I_max = pars.I_max
     background_res = pars.background_res
     t_back = pars.t_back
@@ -177,6 +181,8 @@ def create_layers(times, stim, pars, seed=42, verbose=True, debug=False):
         Hsigma[idx_conn] = ys[idx_h_sigma]
 
         G = H * C
+        G = G.T
+
         Gi = IN * Ci
 
         Cprime = Cstd  # approximatly
@@ -194,7 +200,8 @@ def create_layers(times, stim, pars, seed=42, verbose=True, debug=False):
             # I(t)
             I = np.dot(G[:, j], V[:, j]) + np.dot(Gi[j], Vi[j]) + I_bias[j]
             if I > I_max:
-                warnings.warn("Clipping I to {}.".format(I_max))
+                warnings.warn("Clipping I to {} in {} at {} seconds.".format(
+                    I_max, names[j], t), RuntimeWarning)
                 I = I_max
             # I = np.min([I, I_max])
             I = np.max([0, I])
