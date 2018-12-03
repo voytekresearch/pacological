@@ -1,0 +1,50 @@
+# Definitions --------------------------------------------------------
+# Phi
+parameters L=1
+parameters tau_phi=20e-3
+parameters gb_0=1e-7,gb_syn=9.995e-09,sigma=1.166e-06
+parameters I_e=2e-9,I_i=1e-9
+
+# Neuron
+parameters tau_ampa=5e-3,tau_gaba=10e-3,tau_m=2e-3
+parameters Vampa=0,Vgaba=-80e-3,Vth=-55e-3,Vreset=-60e-3
+
+# Network
+parameters N=10000,Ne=8000,Ni=2000,p=0.02,Ce=160,Ci=40
+parameters w_ee=2e-9,w_ie=50e-9,w_ei=20e-9,w_ii=10e-9
+init re=8,ri=12
+
+# Derived params
+gb_tot=gb_0+gb_syn
+
+# Functions ---------------------------------------------------------
+# Define the non-linearity
+logistic(x,x0,k)=L/(1+exp(-k*(x-x0)))
+
+a=(gb_tot*sigma)/(tau_m*gb_0*(Vth-Vreset)) 
+phi(Isyn,I,k)=(1/a)*logistic(Isyn,I,1/k)
+
+curr(ge,gi)=ge*(Vampa-Vth)+gi*(Vgaba-Vth)
+
+# ODES --------------------------------------------------------------
+I_re=curr(g_ee,g_ie)
+I_ri=curr(g_ei,g_ii)
+k_e=I_re/(gb_tot*sigma)
+k_i=I_ri/(gb_tot*sigma)
+
+# Step rates
+re'=(-re+phi(I_re,I_e,I_re/(gb_tot*sigma)))/tau_m
+ri'=(-ri+phi(I_re,I_i,I_ri/(gb_tot*sigma)))/tau_m
+
+# Step synapses
+g_ee'=(-g_ee/tau_ampa)+(Ce*w_ee*re)
+g_ie'=(-g_ie/tau_gaba)+(Ci*w_ie*ri)
+g_ei'=(-g_ei/tau_ampa)+(Ce*w_ei*re)
+g_ii'=(-g_ii/tau_gaba)+(Ci*w_ii*ri)
+init g_ee=2e-9,g_ie=50e-9,g_ei=20e-9,g_ii=10e-9
+
+@ dt=1e-4,xlo=0,xhi=2,ylo=0,yhi=100,total=2
+done
+
+
+
